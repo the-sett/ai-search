@@ -1,0 +1,52 @@
+{
+    "version": "0.0.1",
+    "summary": "Stackwhack modeller UI",
+    "repository": "https://github.com/no-user/not-a-github-project.git",
+    "license": "private",
+    "source-directories": [
+        "src/elm/",
+        "."
+    ],
+    "exposed-modules": [],
+    "native-modules": false,
+    "dependencies": {
+        "elm-lang/core": "5.0.0 <= v < 6.0.0",
+        "elm-lang/html": "2.0.0 <= v < 3.0.0",
+        "elm-lang/http": "1.0.0 <= v < 2.0.0",
+        "evancz/elm-markdown" : "3.0.1 <= v < 4.0.0",
+        "rgrempel/elm-http-decorators": "2.0.0 <= v < 3.0.0",
+        "elm-community/json-extra": "2.0.0 <= v < 3.0.0",
+        "krisajenkins/elm-exts": "26.1.0 <= v < 27.0.0",
+        "elm-lang/navigation": "2.0.1 <= v < 3.0.0",
+        "elm-community/json-extra": "2.0.0 <= v < 3.0.0",
+        "elm-community/dict-extra": "1.3.1 <= v < 2.0.0",
+        "elm-community/maybe-extra": "3.0.0 <= v < 4.0.0",
+        "elm-community/list-extra": "4.0.0 <= v < 5.0.0",
+        "krisajenkins/elm-exts": "26.1.0 <= v < 27.0.0",
+        "rgrempel/elm-route-url": "3.0.0 <= v < 4.0.0",
+        "debois/elm-dom": "1.2.3 <= v < 2.0.0",
+        "elm-lang/svg": "2.0.0 <= v < 3.0.0",
+        "elm-lang/animation-frame": "1.0.1 <= v < 2.0.0",
+        "mdgriffith/elm-style-animation": "3.5.2 <= v < 4.0.0",
+        "mdgriffith/style-elements": "2.0.1 <= v < 3.0.0",
+        "elm-community/easing-functions": "1.0.2 <= v < 2.0.0",
+        "tomjkidd/elm-multiway-tree-zipper": "1.10.2 <= v < 11.0.0",
+        "folkertdev/outmessage": "1.0.3 <= v < 2.0.0",
+        "abrykajlo/elm-scroll" : "2.0.1 <= v < 3.0.0",
+        "jinjor/elm-time-travel" : "2.0.0 <= v < 3.0.0",
+        "Fresheyeball/elm-function-extra" : "3.0.0 <= v < 4.0.0",
+        "debois/elm-mdl": "8.1.0 <= v < 9.0.0",
+        "elm-community/typed-svg": "1.0.1 <= v < 2.0.0",
+        "elm-community/lazy-list": "1.0.0 <= v < 2.0.0",
+        "opensolid/geometry": "1.1.0 <= v < 2.0.0",
+        "opensolid/svg": "1.0.2 <= v < 2.0.0",
+        "eeue56/elm-all-dict": "2.0.1 <= v < 3.0.0"
+    },
+    "elm-version": "0.18.0 <= v < 0.19.0",
+    "dependency-sources": {
+      "rupertlssmith/svg": {
+        "url": "https://github.com/rupertlssmith/svg.git",
+        "ref": "typed-svg"
+      }
+    }
+}

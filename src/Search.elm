@@ -35,7 +35,7 @@ type alias Node state =
 -}
 type SearchResult state
     = Complete
-    | Goal state
+    | Goal state (() -> SearchResult state)
     | Ongoing state (() -> SearchResult state)
 
 
@@ -62,23 +62,26 @@ search uninformed start =
         step =
             uninformed.step
 
-        expandHead : List (Node state) -> SearchResult state
-        expandHead pending =
-            case pending of
-                [] ->
-                    Complete
+        examineHead : List (Node state) -> SearchResult state
+        examineHead buffer =
+            let
+                expand state buffer =
+                    (\() ->
+                        examineHead <|
+                            List.foldl (\node buffer -> buffer ++ [ node ]) buffer (step ( state, False ))
+                    )
+            in
+                case buffer of
+                    [] ->
+                        Complete
 
-                ( state, True ) :: _ ->
-                    Goal state
+                    ( state, True ) :: pendingStates ->
+                        Goal state (expand state pendingStates)
 
-                ( state, False ) :: xs ->
-                    Ongoing (Debug.log "search" state)
-                        (\() ->
-                            expandHead <|
-                                List.foldl (\node buffer -> buffer ++ [ node ]) xs (step ( state, False ))
-                        )
+                    ( state, False ) :: pendingStates ->
+                        Ongoing (Debug.log "search" state) (expand state pendingStates)
     in
-        expandHead start
+        examineHead start
 
 
 {-| Steps a search result, to produce the next result.
@@ -91,8 +94,8 @@ next result =
         Complete ->
             Complete
 
-        Goal state ->
-            Goal state
+        Goal state cont ->
+            Goal state cont
 
         Ongoing _ cont ->
             cont ()
@@ -109,8 +112,8 @@ nextGoal result =
         Complete ->
             Complete
 
-        Goal state ->
-            Goal state
+        Goal state cont ->
+            Goal state cont
 
         Ongoing _ cont ->
             cont () |> nextGoal

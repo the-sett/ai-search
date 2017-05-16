@@ -54,9 +54,19 @@ type alias Uninformed state =
     }
 
 
+{-| Defines the operations needed on state buffers that hold the pending search
+    states.
+-}
+type alias Buffer state buffer =
+    { orelse : state -> buffer -> buffer
+    , head : buffer -> Maybe state
+    , init : List (Node state) -> buffer
+    }
+
+
 {-| Performs an uninformed search.
 -}
-search : Uninformed state -> List (Node state) -> SearchResult state
+search : Buffer state buffer -> Uninformed state -> List (Node state) -> SearchResult state
 search uninformed start =
     let
         step =

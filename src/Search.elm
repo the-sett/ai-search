@@ -25,6 +25,8 @@ module Search
 @docs breadthFirstSearch, depthFirstSearch
 -}
 
+import Heap exposing (Heap)
+
 
 {-| Defines the type of Nodes that searches work over.
 -}
@@ -89,6 +91,14 @@ type alias Buffer state buffer =
     }
 
 
+{-| This utility function is used to convert a comparison over states into a
+    comparison over search nodes.
+-}
+nodeCompare : Compare state -> Node state -> Node state -> Order
+nodeCompare compare ( state1, _ ) ( state2, _ ) =
+    compare state1 state2
+
+
 {-| Performs an uninformed search.
 -}
 search : Buffer state buffer -> Uninformed state -> List (Node state) -> SearchResult state
@@ -143,6 +153,37 @@ lifo =
     { fifo
         | orelse = \node list -> list ++ [ node ]
     }
+
+
+{-| Implements an order buffer using a heap. A state comparison function is
+    supplied to construct the buffer on.
+-}
+ordered : Compare state -> Buffer state (Heap (Node state))
+ordered compare =
+    { orelse = \node heap -> Heap.push node heap
+    , head = \heap -> Heap.pop heap
+    , init = \list -> Heap.fromList (Heap.smallest |> Heap.byCompare (nodeCompare compare)) list
+    }
+
+
+compareH : Informed state -> Compare state
+compareH informed =
+    \state1 state2 ->
+        compare (informed.heuristic state1) (informed.heuristic state2)
+
+
+compareC : Informed state -> Compare state
+compareC informed =
+    \state1 state2 ->
+        compare (informed.cost state1) (informed.cost state2)
+
+
+compareF : Informed state -> Compare state
+compareF informed =
+    \state1 state2 ->
+        compare
+            (informed.heuristic state1 + informed.cost state1)
+            (informed.heuristic state2 + informed.cost state2)
 
 
 {-| Performs an unbounded depth first search. Depth first searches can easily

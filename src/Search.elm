@@ -4,7 +4,8 @@ module Search
         , SearchResult(..)
         , Step
         , Uninformed
-        , search
+        , breadthFirstSearch
+        , depthFirstSearch
         , next
         , nextGoal
         )
@@ -17,11 +18,11 @@ module Search
 # The search output type:
 @docs SearchResult
 
-# The search function:
-@docs search
-
 # Helper functions for iterating searches to produce results:
 @docs next, nextGoal
+
+# Search strategies:
+@docs breadthFirstSearch, depthFirstSearch
 -}
 
 
@@ -40,14 +41,14 @@ type SearchResult state
 
 
 {-| Defines the type of the step function that produces new states from existing
-   ones. This is how the graph over the search space is defined.
+    ones. This is how the graph over the search space is defined.
 -}
 type alias Step state =
     Node state -> List (Node state)
 
 
 {-| Defines the type of a bundle of operators that need to be supplied to conduct
-   an uninformed (non-heuristic) search.
+    an uninformed (non-heuristic) search.
 -}
 type alias Uninformed state =
     { step : Step state
@@ -58,8 +59,8 @@ type alias Uninformed state =
     states.
 -}
 type alias Buffer state buffer =
-    { orelse : state -> buffer -> buffer
-    , head : buffer -> Maybe state
+    { orelse : Node state -> buffer -> buffer
+    , head : buffer -> Maybe ( Node state, buffer )
     , init : List (Node state) -> buffer
     }
 
@@ -67,31 +68,73 @@ type alias Buffer state buffer =
 {-| Performs an uninformed search.
 -}
 search : Buffer state buffer -> Uninformed state -> List (Node state) -> SearchResult state
-search uninformed start =
+search buffer uninformed start =
     let
         step =
             uninformed.step
 
-        examineHead : List (Node state) -> SearchResult state
-        examineHead buffer =
+        examineHead : buffer -> SearchResult state
+        examineHead queue =
             let
-                expand state buffer =
+                expand state queue =
                     (\() ->
                         examineHead <|
-                            List.foldl (\node buffer -> buffer ++ [ node ]) buffer (step ( state, False ))
+                            List.foldl (\node queue -> (buffer.orelse node queue)) queue (step ( state, False ))
                     )
             in
-                case buffer of
-                    [] ->
+                case buffer.head queue of
+                    Nothing ->
                         Complete
 
-                    ( state, True ) :: pendingStates ->
+                    Just ( ( state, True ), pendingStates ) ->
                         Goal state (expand state pendingStates)
 
-                    ( state, False ) :: pendingStates ->
+                    Just ( ( state, False ), pendingStates ) ->
                         Ongoing (Debug.log "search" state) (expand state pendingStates)
     in
-        examineHead start
+        examineHead <| buffer.init start
+
+
+{-| Implements a first-in first-out buffer using Lists.
+-}
+fifo : Buffer state (List (Node state))
+fifo =
+    { orelse = \node list -> node :: list
+    , head =
+        \list ->
+            case list of
+                [] ->
+                    Nothing
+
+                x :: xs ->
+                    Just ( x, xs )
+    , init = \list -> list
+    }
+
+
+{-| Implements a last-in first-out buffer using Lists and appending at to the end.
+-}
+lifo : Buffer state (List (Node state))
+lifo =
+    { fifo
+        | orelse = \node list -> list ++ [ node ]
+    }
+
+
+{-| Performs an unbounded depth first search. Depth first searches can easily
+    fall into infinite loops.
+-}
+depthFirstSearch : Uninformed state -> List (Node state) -> SearchResult state
+depthFirstSearch =
+    search fifo
+
+
+{-| Performs an unbounded breadth first search. Breadth first searches store
+    a lot of pending nodes in the buffer, so quickly run out of space.
+-}
+breadthFirstSearch : Uninformed state -> List (Node state) -> SearchResult state
+breadthFirstSearch =
+    search lifo
 
 
 {-| Steps a search result, to produce the next result.
@@ -105,7 +148,7 @@ next result =
             Complete
 
         Goal state cont ->
-            Goal state cont
+            cont ()
 
         Ongoing _ cont ->
             cont ()

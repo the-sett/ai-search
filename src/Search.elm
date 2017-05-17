@@ -4,8 +4,10 @@ module Search
         , SearchResult(..)
         , Step
         , Uninformed
-        , breadthFirstSearch
-        , depthFirstSearch
+        , breadthFirst
+        , depthFirst
+        , aStar
+        , greedy
         , next
         , nextGoal
         )
@@ -21,8 +23,11 @@ module Search
 # Helper functions for iterating searches to produce results:
 @docs next, nextGoal
 
-# Search strategies:
-@docs breadthFirstSearch, depthFirstSearch
+# Uninformed search strategies:
+@docs breadthFirst, depthFirst
+
+# Informed search strategies:
+@docs aStar, greedy
 -}
 
 import Heap exposing (Heap)
@@ -129,6 +134,15 @@ search buffer uninformed start =
         examineHead <| buffer.init start
 
 
+{-| Performs an informed (heuristic) search.
+-}
+informedSearch : (Informed state -> Compare state) -> Informed state -> List (Node state) -> SearchResult state
+informedSearch comparison informed start =
+    search (ordered <| comparison informed)
+        { step = informed.step, cost = informed.cost }
+        start
+
+
 {-| Implements a first-in first-out buffer using Lists.
 -}
 fifo : Buffer state (List (Node state))
@@ -189,17 +203,34 @@ compareF informed =
 {-| Performs an unbounded depth first search. Depth first searches can easily
     fall into infinite loops.
 -}
-depthFirstSearch : Uninformed state -> List (Node state) -> SearchResult state
-depthFirstSearch =
+depthFirst : Uninformed state -> List (Node state) -> SearchResult state
+depthFirst =
     search fifo
 
 
 {-| Performs an unbounded breadth first search. Breadth first searches store
     a lot of pending nodes in the buffer, so quickly run out of space.
 -}
-breadthFirstSearch : Uninformed state -> List (Node state) -> SearchResult state
-breadthFirstSearch =
+breadthFirst : Uninformed state -> List (Node state) -> SearchResult state
+breadthFirst =
     search lifo
+
+
+{-| Performs an A* search.  This is one that always follows the search node that
+    has the highest f value (f = heuristic + cost).
+    The seach will only be optimal if the heuristic function is monotonic.
+-}
+aStar : Informed state -> List (Node state) -> SearchResult state
+aStar =
+    informedSearch compareF
+
+
+{-| Performs an A* search.  This is one that always follows the search node that
+    has the highest h value (h = heuristic).
+-}
+greedy : Informed state -> List (Node state) -> SearchResult state
+greedy =
+    informedSearch compareC
 
 
 

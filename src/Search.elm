@@ -134,10 +134,10 @@ search buffer uninformed start =
         examineHead <| buffer.init start
 
 
-{-| Performs an informed (heuristic) search.
+{-| Performs an ordered search.
 -}
-informedSearch : (Informed state -> Compare state) -> Informed state -> List (Node state) -> SearchResult state
-informedSearch comparison informed start =
+orderedSearch : (Informed state -> Compare state) -> Informed state -> List (Node state) -> SearchResult state
+orderedSearch comparison informed start =
     search (ordered <| comparison informed)
         { step = informed.step, cost = informed.cost }
         start
@@ -186,7 +186,7 @@ compareH informed =
         compare (informed.heuristic state1) (informed.heuristic state2)
 
 
-compareC : Informed state -> Compare state
+compareC : { cost : state -> Float } -> Compare state
 compareC informed =
     \state1 state2 ->
         compare (informed.cost state1) (informed.cost state2)
@@ -222,7 +222,7 @@ breadthFirst =
 -}
 aStar : Informed state -> List (Node state) -> SearchResult state
 aStar =
-    informedSearch compareF
+    orderedSearch compareF
 
 
 {-| Performs an A* search.  This is one that always follows the search node that
@@ -230,7 +230,17 @@ aStar =
 -}
 greedy : Informed state -> List (Node state) -> SearchResult state
 greedy =
-    informedSearch compareC
+    orderedSearch compareH
+
+
+{-| Performs a uniform-cost search. This always follows the search node that
+    has the lowest path cost. It is called a uniform cost search because the
+    boundary of the search will have a roughly uniform cost as the search
+    space is searched by increasing cost.
+-}
+uniformCost : Uninformed state -> List (Node state) -> SearchResult state
+uniformCost =
+    orderedSearch compareC
 
 
 
@@ -241,15 +251,10 @@ greedy =
 -- iterative deepening
 -- iterative cost increasing
 --
--- uninformed, ordered:
--- uniform cost
---
 -- informed, unordered:
 -- f-bounded
 --
 -- informed, ordered:
--- a-star
--- greedy
 -- ida-star
 
 

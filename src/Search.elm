@@ -52,7 +52,31 @@ type alias Step state =
 -}
 type alias Uninformed state =
     { step : Step state
+    , cost : state -> Float
     }
+
+
+{-| Defines the type of a bundle of operators that need to be supplied to conduct
+    an informed (heuristic) search.
+-}
+type alias Informed state =
+    { step : Step state
+    , cost : state -> Float
+    , heuristic : state -> Float
+    }
+
+
+{-| Defines the type of a function that compares two states and orders them.
+-}
+type alias Compare state =
+    state -> state -> Order
+
+
+{-| Defines the type of a function that checks if some limit is reached on a
+search node. The most common limit is depth, but other limits are possible.
+-}
+type alias Limit state =
+    Node state -> Bool
 
 
 {-| Defines the operations needed on state buffers that hold the pending search
@@ -135,6 +159,26 @@ depthFirstSearch =
 breadthFirstSearch : Uninformed state -> List (Node state) -> SearchResult state
 breadthFirstSearch =
     search lifo
+
+
+
+--
+-- uninformed, unordered:
+-- depth bounded
+-- cost bounded
+-- iterative deepening
+-- iterative cost increasing
+--
+-- uninformed, ordered:
+-- uniform cost
+--
+-- informed, unordered:
+-- f-bounded
+--
+-- informed, ordered:
+-- a-star
+-- greedy
+-- ida-star
 
 
 {-| Steps a search result, to produce the next result.

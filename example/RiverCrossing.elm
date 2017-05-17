@@ -131,4 +131,5 @@ step node =
 uninformed : Search.Uninformed State
 uninformed =
     { step = step
+    , cost = \_ -> 1.0
     }

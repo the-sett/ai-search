@@ -10,6 +10,9 @@ module Search
         , depthFirst
         , aStar
         , greedy
+        , depthBounded
+        , costBounded
+        , fBounded
         , next
         , nextGoal
         )
@@ -26,10 +29,10 @@ module Search
 @docs next, nextGoal
 
 # Uninformed search strategies:
-@docs breadthFirst, depthFirst
+@docs breadthFirst, depthFirst, depthBounded, costBounded
 
 # Informed search strategies:
-@docs aStar, greedy
+@docs aStar, greedy, fBounded
 -}
 
 import Heap exposing (Heap)
@@ -38,7 +41,7 @@ import Heap exposing (Heap)
 {-| Defines the type of Nodes that searches work over.
 -}
 type alias Node state =
-    ( state, Bool )
+    ( state, Bool, Int )
 
 
 {-| Defines the possible outcomes of a search.
@@ -96,10 +99,13 @@ type alias Compare state =
 
 
 {-| Defines the type of a function that checks if some limit is reached on a
-search node. The most common limit is depth, but other limits are possible.
+    search node. The most common limit is depth, but other limits are possible.
+    The first argument is an Int, and will be passed the iteration numbered from
+    zero, when performing an iterative search. For bounds that do not iteratively
+    increase, this can be ignored.
 -}
 type alias Limit state =
-    Node state -> Bool
+    Int -> Node state -> Bool
 
 
 {-| Defines the operations needed on state buffers that hold the pending search
@@ -116,14 +122,19 @@ type alias Buffer state buffer =
     comparison over search nodes.
 -}
 nodeCompare : Compare state -> Node state -> Node state -> Order
-nodeCompare compare ( state1, _ ) ( state2, _ ) =
+nodeCompare compare ( state1, _, _ ) ( state2, _, _ ) =
     compare state1 state2
 
 
 {-| Performs an uninformed search.
 -}
-search : Buffer state buffer -> WithBasicSearch a state -> List (Node state) -> SearchResult state
-search buffer uninformed start =
+search :
+    Buffer state buffer
+    -> WithBasicSearch a state
+    -> Maybe (Limit state)
+    -> List (Node state)
+    -> SearchResult state
+search buffer uninformed maybeLimit start =
     let
         step =
             uninformed.step
@@ -131,30 +142,77 @@ search buffer uninformed start =
         examineHead : buffer -> SearchResult state
         examineHead queue =
             let
-                expand state queue =
+                expand depth node queue =
                     (\() ->
                         examineHead <|
-                            List.foldl (\node queue -> (buffer.orelse node queue)) queue (step ( state, False ))
+                            List.foldl (\( state, isGoal, _ ) queue -> (buffer.orelse ( state, isGoal, depth + 1 ) queue)) queue (step node)
                     )
+
+                notExpand queue =
+                    (\() -> examineHead queue)
             in
                 case buffer.head queue of
                     Nothing ->
                         Complete
 
-                    Just ( ( state, True ), pendingStates ) ->
-                        Goal state (expand state pendingStates)
+                    Just ( headNode, pendingStates ) ->
+                        let
+                            d =
+                                Debug.log "head" headNode
 
-                    Just ( ( state, False ), pendingStates ) ->
-                        Ongoing (Debug.log "search" state) (expand state pendingStates)
+                            nextStep state depth =
+                                case maybeLimit of
+                                    Nothing ->
+                                        (expand depth ( state, False, depth ) pendingStates)
+
+                                    Just limit ->
+                                        if (limit 0 ( state, False, depth )) then
+                                            (notExpand pendingStates)
+                                        else
+                                            (expand depth ( state, False, depth ) pendingStates)
+                        in
+                            case headNode of
+                                ( state, True, depth ) ->
+                                    Goal state <| nextStep state depth
+
+                                ( state, False, depth ) ->
+                                    Ongoing state <| nextStep state depth
     in
         examineHead <| buffer.init start
 
 
+{-| Performs an uninformed and unbounded search.
+-}
+unboundedSearch :
+    Buffer state buffer
+    -> WithBasicSearch a state
+    -> List (Node state)
+    -> SearchResult state
+unboundedSearch buffer uninformed =
+    search buffer uninformed Nothing
+
+
 {-| Performs an ordered search.
 -}
-orderedSearch : (WithBasicSearch a state -> Compare state) -> WithBasicSearch a state -> List (Node state) -> SearchResult state
-orderedSearch comparison basicSearch start =
-    search (ordered <| comparison basicSearch) basicSearch start
+orderedSearch :
+    (WithBasicSearch a state -> Compare state)
+    -> WithBasicSearch a state
+    -> Maybe (Limit state)
+    -> List (Node state)
+    -> SearchResult state
+orderedSearch comparison basicSearch maybeLimit start =
+    search (ordered <| comparison basicSearch) basicSearch maybeLimit start
+
+
+{-| Performs an ordered and unbounded search.
+-}
+unboundedOrderedSearch :
+    (WithBasicSearch a state -> Compare state)
+    -> WithBasicSearch a state
+    -> List (Node state)
+    -> SearchResult state
+unboundedOrderedSearch comparison basicSearch =
+    search (ordered <| comparison basicSearch) basicSearch Nothing
 
 
 {-| Implements a first-in first-out buffer using Lists.
@@ -219,7 +277,7 @@ compareF informed =
 -}
 depthFirst : WithBasicSearch a state -> List (Node state) -> SearchResult state
 depthFirst =
-    search fifo
+    unboundedSearch fifo
 
 
 {-| Performs an unbounded breadth first search. Breadth first searches store
@@ -227,7 +285,7 @@ depthFirst =
 -}
 breadthFirst : WithBasicSearch a state -> List (Node state) -> SearchResult state
 breadthFirst =
-    search lifo
+    unboundedSearch lifo
 
 
 {-| Performs an A* search.  This is one that always follows the search node that
@@ -236,7 +294,7 @@ breadthFirst =
 -}
 aStar : Informed state -> List (Node state) -> SearchResult state
 aStar =
-    orderedSearch compareF
+    unboundedOrderedSearch compareF
 
 
 {-| Performs a greedy heuristic search.  This is one that always follows the
@@ -244,7 +302,7 @@ aStar =
 -}
 greedy : Informed state -> List (Node state) -> SearchResult state
 greedy =
-    orderedSearch compareH
+    unboundedOrderedSearch compareH
 
 
 {-| Performs a uniform-cost search. This always follows the search node that
@@ -254,21 +312,55 @@ greedy =
 -}
 uniformCost : WithBasicSearch a state -> List (Node state) -> SearchResult state
 uniformCost =
-    orderedSearch compareC
+    unboundedOrderedSearch compareC
+
+
+{-| Implements a depth limit on search nodes.
+-}
+depthLimit : Int -> Limit state
+depthLimit maxDepth _ ( _, _, depth ) =
+    depth >= maxDepth
+
+
+{-| Implements a cost limit on search nodes for basic searches.
+-}
+costLimit : WithBasicSearch a state -> Float -> Limit state
+costLimit basicSearch maxCost _ ( state, _, _ ) =
+    basicSearch.cost state >= maxCost
+
+
+{-| Implements an f-limit on search nodes for heuristic searches (f = cost + heuristic)
+-}
+fLimit : Informed state -> Float -> Limit state
+fLimit informed maxF _ ( state, _, _ ) =
+    informed.heuristic state + informed.cost state >= maxF
+
+
+{-| Implements an uninformed search that is bounded to a specified maximum depth.
+-}
+depthBounded : WithBasicSearch a state -> Int -> List (Node state) -> SearchResult state
+depthBounded basicSearch maxDepth =
+    search fifo basicSearch (Just <| depthLimit maxDepth)
+
+
+{-| Implements a cost bounded search. This search will proceed depth first.
+-}
+costBounded : WithBasicSearch a state -> Float -> List (Node state) -> SearchResult state
+costBounded basicSearch maxCost =
+    search fifo basicSearch (Just <| costLimit basicSearch maxCost)
+
+
+{-| Implements a cost bounded search. This search will proceed depth first and
+    does not use the heuristic to order search nodes at all.
+-}
+fBounded : Informed state -> Float -> List (Node state) -> SearchResult state
+fBounded informed maxF =
+    search fifo informed (Just <| fLimit informed maxF)
 
 
 
---
--- uninformed, unordered:
--- depth bounded
--- cost bounded
 -- iterative deepening
 -- iterative cost increasing
---
--- informed, unordered:
--- f-bounded
---
--- informed, ordered:
 -- ida-star
 
 

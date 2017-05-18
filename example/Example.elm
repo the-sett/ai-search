@@ -9,4 +9,4 @@ main =
     text <|
         toString <|
             Search.nextGoal <|
-                Search.breadthFirst RiverCrossing.uninformed [ ( RiverCrossing.start, False ) ]
+                Search.depthBounded RiverCrossing.uninformed 7 [ ( RiverCrossing.start, False, 0 ) ]

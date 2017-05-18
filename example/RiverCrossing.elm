@@ -55,8 +55,8 @@ switch position =
 -}
 
 
-move : Character -> Search.Node State -> Maybe (Search.Node State)
-move character ( state, _, depth ) =
+move : Character -> State -> Maybe ( State, Bool )
+move character state =
     let
         nextState =
             if character == Farmer then
@@ -77,7 +77,7 @@ move character ( state, _, depth ) =
                         Nothing
     in
         Maybe.Extra.filter (not << illegal) nextState
-            |> Maybe.andThen (\state -> Just ( state, goal state, depth + 1 ))
+            |> Maybe.andThen (\state -> Just ( state, goal state ))
 
 
 

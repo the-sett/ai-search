@@ -56,7 +56,7 @@ type SearchResult state
     ones. This is how the graph over the search space is defined.
 -}
 type alias Step state =
-    Node state -> List (Node state)
+    state -> List ( state, Bool )
 
 
 {-| Defines the type of a bundle of operators that need to be supplied to conduct
@@ -142,10 +142,10 @@ search buffer uninformed maybeLimit start =
         examineHead : buffer -> SearchResult state
         examineHead queue =
             let
-                expand depth node queue =
+                expand depth state queue =
                     (\() ->
                         examineHead <|
-                            List.foldl (\( state, isGoal, _ ) queue -> (buffer.orelse ( state, isGoal, depth + 1 ) queue)) queue (step node)
+                            List.foldl (\( state, isGoal ) queue -> (buffer.orelse ( state, isGoal, depth + 1 ) queue)) queue (step state)
                     )
 
                 notExpand queue =
@@ -163,13 +163,13 @@ search buffer uninformed maybeLimit start =
                             nextStep state depth =
                                 case maybeLimit of
                                     Nothing ->
-                                        (expand depth ( state, False, depth ) pendingStates)
+                                        (expand depth state pendingStates)
 
                                     Just limit ->
                                         if (limit 0 ( state, False, depth )) then
                                             (notExpand pendingStates)
                                         else
-                                            (expand depth ( state, False, depth ) pendingStates)
+                                            (expand depth state pendingStates)
                         in
                             case headNode of
                                 ( state, True, depth ) ->

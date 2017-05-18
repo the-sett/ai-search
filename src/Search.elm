@@ -342,21 +342,23 @@ uniformCost =
     unboundedOrderedSearch compareC
 
 
-{-| Implements a depth limit on search nodes.
+{-| Implements a depth limit on search nodes. This is a fixed limit, not iterative.
 -}
 depthLimit : Int -> Limit state
 depthLimit maxDepth _ ( _, _, depth ) =
     depth >= maxDepth
 
 
-{-| Implements a cost limit on search nodes for basic searches.
+{-| Implements a cost limit on search nodes for basic searches. This is a fixed
+    limit, not iterative.
 -}
 costLimit : WithBasicSearch a state -> Float -> Limit state
 costLimit basicSearch maxCost _ ( state, _, _ ) =
     basicSearch.cost state >= maxCost
 
 
-{-| Implements an f-limit on search nodes for heuristic searches (f = cost + heuristic)
+{-| Implements an f-limit on search nodes for heuristic searches (f = cost + heuristic).
+    This is a fixed limit, not iterative.
 -}
 fLimit : Informed state -> Float -> Limit state
 fLimit informed maxF _ ( state, _, _ ) =
@@ -385,9 +387,53 @@ fBounded informed maxF =
     search fifo informed (Just <| fLimit informed maxF) 0
 
 
+{-| Implements a depth limit on search nodes. This is an iterative limit. The
+    iteration number is multiplied by a specified multiple to calculate the
+    maximum depth allowed at a given iteration.
+-}
+iterativeDepthLimit : Int -> Limit state
+iterativeDepthLimit multiple iteration ( _, _, depth ) =
+    depth >= (iteration + 1) * multiple
 
--- iterative deepening
--- iterative cost increasing
+
+{-| Implements a cost limit on search nodes for basic searches. This is an
+    iterative limit. The iteration number is multiplied by a specified multiple
+    to calculate the maximum cost allowed at a given iteration.
+-}
+iterativeCostLimit : WithBasicSearch a state -> Float -> Limit state
+iterativeCostLimit basicSearch multiple iteration ( state, _, _ ) =
+    basicSearch.cost state >= toFloat (iteration + 1) * multiple
+
+
+{-| Implements an iterative deepening search. This search proceed depth first
+    but repeats at progressively larger depth limits. The iteration number is
+    multiplied by a specified multiple to calculate the maximum depth allowed
+    at a given iteration.
+-}
+iterativeDeepeningSearch :
+    Int
+    -> WithBasicSearch a state
+    -> List (Node state)
+    -> SearchResult state
+iterativeDeepeningSearch multiple basicSearch =
+    iterativeSearch fifo basicSearch (iterativeDepthLimit multiple)
+
+
+{-| Implements an iterative cost increasing. This search proceed depth first
+    but repeats at progressively larger cost limits. The iteration number is
+    multiplied by a specified multiple to calculate the maximum cost allowed
+    at a given iteration.
+-}
+iterativeCostIncreasingSearch :
+    Float
+    -> WithBasicSearch a state
+    -> List (Node state)
+    -> SearchResult state
+iterativeCostIncreasingSearch multiple basicSearch =
+    iterativeSearch fifo basicSearch (iterativeCostLimit basicSearch multiple)
+
+
+
 -- ida-star
 
 

@@ -132,9 +132,10 @@ search :
     Buffer state buffer
     -> WithBasicSearch a state
     -> Maybe (Limit state)
+    -> Int
     -> List (Node state)
     -> SearchResult state
-search buffer uninformed maybeLimit start =
+search buffer uninformed maybeLimit iteration start =
     let
         step =
             uninformed.step
@@ -189,7 +190,7 @@ unboundedSearch :
     -> List (Node state)
     -> SearchResult state
 unboundedSearch buffer uninformed =
-    search buffer uninformed Nothing
+    search buffer uninformed Nothing 0
 
 
 {-| Performs an ordered search.
@@ -200,8 +201,8 @@ orderedSearch :
     -> Maybe (Limit state)
     -> List (Node state)
     -> SearchResult state
-orderedSearch comparison basicSearch maybeLimit start =
-    search (ordered <| comparison basicSearch) basicSearch maybeLimit start
+orderedSearch comparison basicSearch maybeLimit =
+    search (ordered <| comparison basicSearch) basicSearch maybeLimit 0
 
 
 {-| Performs an ordered and unbounded search.
@@ -212,7 +213,7 @@ unboundedOrderedSearch :
     -> List (Node state)
     -> SearchResult state
 unboundedOrderedSearch comparison basicSearch =
-    search (ordered <| comparison basicSearch) basicSearch Nothing
+    search (ordered <| comparison basicSearch) basicSearch Nothing 0
 
 
 {-| Implements a first-in first-out buffer using Lists.
@@ -340,14 +341,14 @@ fLimit informed maxF _ ( state, _, _ ) =
 -}
 depthBounded : WithBasicSearch a state -> Int -> List (Node state) -> SearchResult state
 depthBounded basicSearch maxDepth =
-    search fifo basicSearch (Just <| depthLimit maxDepth)
+    search fifo basicSearch (Just <| depthLimit maxDepth) 0
 
 
 {-| Implements a cost bounded search. This search will proceed depth first.
 -}
 costBounded : WithBasicSearch a state -> Float -> List (Node state) -> SearchResult state
 costBounded basicSearch maxCost =
-    search fifo basicSearch (Just <| costLimit basicSearch maxCost)
+    search fifo basicSearch (Just <| costLimit basicSearch maxCost) 0
 
 
 {-| Implements a cost bounded search. This search will proceed depth first and
@@ -355,7 +356,7 @@ costBounded basicSearch maxCost =
 -}
 fBounded : Informed state -> Float -> List (Node state) -> SearchResult state
 fBounded informed maxF =
-    search fifo informed (Just <| fLimit informed maxF)
+    search fifo informed (Just <| fLimit informed maxF) 0
 
 
 

@@ -4,6 +4,8 @@ module Search
         , SearchResult(..)
         , Step
         , Uninformed
+        , WithBasicSearch
+        , Informed
         , breadthFirst
         , depthFirst
         , aStar
@@ -15,7 +17,7 @@ module Search
 {-|
 
 # Input types for searches:
-@docs Node, Step, Uninformed
+@docs Node, Step, WithBasicSearch, Uninformed, Informed
 
 # The search output type:
 @docs SearchResult
@@ -55,22 +57,36 @@ type alias Step state =
 
 
 {-| Defines the type of a bundle of operators that need to be supplied to conduct
+    an uninformed (non-heuristic) search. This is an extensible record so that
+    heuristic searches can also take this type, making it easy to apply switch
+    between heuristic and non-heuristic searches.
+-}
+type alias WithBasicSearch a state =
+    { a
+        | step : Step state
+        , cost : state -> Float
+    }
+
+
+{-| Defines the type of a bundle of operators that need to be supplied to conduct
+    an informed (heuristic) search, as an extensible record.
+-}
+type alias WithHeuristic a state =
+    { a | heuristic : state -> Float }
+
+
+{-| Defines the type of a bundle of operators that need to be supplied to conduct
     an uninformed (non-heuristic) search.
 -}
 type alias Uninformed state =
-    { step : Step state
-    , cost : state -> Float
-    }
+    WithBasicSearch {} state
 
 
 {-| Defines the type of a bundle of operators that need to be supplied to conduct
     an informed (heuristic) search.
 -}
 type alias Informed state =
-    { step : Step state
-    , cost : state -> Float
-    , heuristic : state -> Float
-    }
+    WithHeuristic (WithBasicSearch {} state) state
 
 
 {-| Defines the type of a function that compares two states and orders them.
@@ -106,7 +122,7 @@ nodeCompare compare ( state1, _ ) ( state2, _ ) =
 
 {-| Performs an uninformed search.
 -}
-search : Buffer state buffer -> Uninformed state -> List (Node state) -> SearchResult state
+search : Buffer state buffer -> WithBasicSearch a state -> List (Node state) -> SearchResult state
 search buffer uninformed start =
     let
         step =
@@ -136,11 +152,9 @@ search buffer uninformed start =
 
 {-| Performs an ordered search.
 -}
-orderedSearch : (Informed state -> Compare state) -> Informed state -> List (Node state) -> SearchResult state
-orderedSearch comparison informed start =
-    search (ordered <| comparison informed)
-        { step = informed.step, cost = informed.cost }
-        start
+orderedSearch : (WithBasicSearch a state -> Compare state) -> WithBasicSearch a state -> List (Node state) -> SearchResult state
+orderedSearch comparison basicSearch start =
+    search (ordered <| comparison basicSearch) basicSearch start
 
 
 {-| Implements a first-in first-out buffer using Lists.
@@ -186,7 +200,7 @@ compareH informed =
         compare (informed.heuristic state1) (informed.heuristic state2)
 
 
-compareC : { cost : state -> Float } -> Compare state
+compareC : WithBasicSearch a state -> Compare state
 compareC informed =
     \state1 state2 ->
         compare (informed.cost state1) (informed.cost state2)
@@ -203,7 +217,7 @@ compareF informed =
 {-| Performs an unbounded depth first search. Depth first searches can easily
     fall into infinite loops.
 -}
-depthFirst : Uninformed state -> List (Node state) -> SearchResult state
+depthFirst : WithBasicSearch a state -> List (Node state) -> SearchResult state
 depthFirst =
     search fifo
 
@@ -211,7 +225,7 @@ depthFirst =
 {-| Performs an unbounded breadth first search. Breadth first searches store
     a lot of pending nodes in the buffer, so quickly run out of space.
 -}
-breadthFirst : Uninformed state -> List (Node state) -> SearchResult state
+breadthFirst : WithBasicSearch a state -> List (Node state) -> SearchResult state
 breadthFirst =
     search lifo
 
@@ -225,8 +239,8 @@ aStar =
     orderedSearch compareF
 
 
-{-| Performs an A* search.  This is one that always follows the search node that
-    has the highest h value (h = heuristic).
+{-| Performs a greedy heuristic search.  This is one that always follows the
+    search node that has the highest h value (h = heuristic).
 -}
 greedy : Informed state -> List (Node state) -> SearchResult state
 greedy =
@@ -234,11 +248,11 @@ greedy =
 
 
 {-| Performs a uniform-cost search. This always follows the search node that
-    has the lowest path cost. It is called a uniform cost search because the
-    boundary of the search will have a roughly uniform cost as the search
-    space is searched by increasing cost.
+   has the lowest path cost. It is called a uniform cost search because the
+   boundary of the search will have a roughly uniform cost as the search
+   space is searched by increasing cost.
 -}
-uniformCost : Uninformed state -> List (Node state) -> SearchResult state
+uniformCost : WithBasicSearch a state -> List (Node state) -> SearchResult state
 uniformCost =
     orderedSearch compareC
 

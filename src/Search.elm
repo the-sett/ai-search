@@ -167,7 +167,7 @@ search buffer uninformed maybeLimit iteration start =
                                         (expand depth state pendingStates)
 
                                     Just limit ->
-                                        if (limit 0 ( state, False, depth )) then
+                                        if (limit iteration ( state, False, depth )) then
                                             (notExpand pendingStates)
                                         else
                                             (expand depth state pendingStates)
@@ -214,6 +214,32 @@ unboundedOrderedSearch :
     -> SearchResult state
 unboundedOrderedSearch comparison basicSearch =
     search (ordered <| comparison basicSearch) basicSearch Nothing 0
+
+
+{-| Performs an iterative search. Every time the search reaches Complete
+    (due to the specified limit being reach), a new search is started from the
+    beginning at the next iteration.
+-}
+iterativeSearch :
+    Buffer state buffer
+    -> WithBasicSearch a state
+    -> Limit state
+    -> List (Node state)
+    -> SearchResult state
+iterativeSearch buffer basicSearch limit start =
+    let
+        iteration count =
+            case (search buffer basicSearch (Just limit) 0 start) of
+                Complete ->
+                    iteration (count + 1)
+
+                Goal state cont ->
+                    Goal state cont
+
+                Ongoing state cont ->
+                    Ongoing state cont
+    in
+        iteration 0
 
 
 {-| Implements a first-in first-out buffer using Lists.

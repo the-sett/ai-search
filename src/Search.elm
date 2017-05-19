@@ -13,6 +13,8 @@ module Search
         , depthBounded
         , costBounded
         , fBounded
+        , iterativeDeepening
+        , iterativeCostIncreasing
         , next
         , nextGoal
         )
@@ -29,7 +31,8 @@ module Search
 @docs next, nextGoal
 
 # Uninformed search strategies:
-@docs breadthFirst, depthFirst, depthBounded, costBounded
+@docs breadthFirst, depthFirst, depthBounded, costBounded, iterativeDeepening,
+      iterativeCostIncreasing
 
 # Informed search strategies:
 @docs aStar, greedy, fBounded
@@ -410,12 +413,12 @@ iterativeCostLimit basicSearch multiple iteration ( state, _, _ ) =
     multiplied by a specified multiple to calculate the maximum depth allowed
     at a given iteration.
 -}
-iterativeDeepeningSearch :
+iterativeDeepening :
     Int
     -> WithBasicSearch a state
     -> List (Node state)
     -> SearchResult state
-iterativeDeepeningSearch multiple basicSearch =
+iterativeDeepening multiple basicSearch =
     iterativeSearch fifo basicSearch (iterativeDepthLimit multiple)
 
 
@@ -424,12 +427,12 @@ iterativeDeepeningSearch multiple basicSearch =
     multiplied by a specified multiple to calculate the maximum cost allowed
     at a given iteration.
 -}
-iterativeCostIncreasingSearch :
+iterativeCostIncreasing :
     Float
     -> WithBasicSearch a state
     -> List (Node state)
     -> SearchResult state
-iterativeCostIncreasingSearch multiple basicSearch =
+iterativeCostIncreasing multiple basicSearch =
     iterativeSearch fifo basicSearch (iterativeCostLimit basicSearch multiple)
 
 

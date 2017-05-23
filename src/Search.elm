@@ -23,7 +23,7 @@ module Search
 {-|
 
 # Input types for searches:
-@docs Step, Uninformed, Informed
+@docs Step, Uninformed, Informed, WithBasicSearch
 
 # The search output type:
 @docs SearchResult

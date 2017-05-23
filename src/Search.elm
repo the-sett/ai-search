@@ -236,7 +236,7 @@ iterativeSearch buffer basicSearch limit start =
             evaluate count (search buffer basicSearch (Just limit) count start)
 
         evaluate count result =
-            case (Debug.log "evaluate" result) of
+            case result of
                 Complete ->
                     iteration (count + 1)
 

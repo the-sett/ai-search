@@ -4,6 +4,7 @@ module Search
         , Step
         , Uninformed
         , Informed
+        , WithBasicSearch
         , breadthFirst
         , depthFirst
         , aStar

@@ -1,12 +1,12 @@
 module Example exposing (..)
 
 import Html exposing (text)
-import Search
+import Search exposing (..)
 import RiverCrossing
 
 
 main =
     text <|
         toString <|
-            Search.nextN 250 <|
-                Search.iterativeDeepening 1 RiverCrossing.uninformed [ ( RiverCrossing.start, False, 0 ) ]
+            nextN 250 <|
+                iterativeDeepening 1 RiverCrossing.uninformed [ RiverCrossing.start ]

@@ -1,7 +1,6 @@
 module Search
     exposing
-        ( Node
-        , SearchResult(..)
+        ( SearchResult(..)
         , Step
         , Uninformed
         , WithBasicSearch
@@ -10,6 +9,7 @@ module Search
         , depthFirst
         , aStar
         , greedy
+        , uniformCost
         , depthBounded
         , costBounded
         , fBounded
@@ -23,7 +23,7 @@ module Search
 {-|
 
 # Input types for searches:
-@docs Node, Step, WithBasicSearch, Uninformed, Informed
+@docs Step, WithBasicSearch, Uninformed, Informed
 
 # The search output type:
 @docs SearchResult
@@ -32,8 +32,8 @@ module Search
 @docs next, nextN, nextGoal
 
 # Uninformed search strategies:
-@docs breadthFirst, depthFirst, depthBounded, costBounded, iterativeDeepening,
-      iterativeCostIncreasing
+@docs breadthFirst, depthFirst, depthBounded, costBounded, uniformCost,
+      iterativeDeepening, iterativeCostIncreasing
 
 # Informed search strategies:
 @docs aStar, greedy, fBounded
@@ -130,6 +130,14 @@ nodeCompare compare ( state1, _, _ ) ( state2, _, _ ) =
     compare state1 state2
 
 
+{-| Converts a list of states into search Nodes. It is assumed that the start
+    states are never goal states, and are always at depth 0.
+-}
+makeStartNodes : List state -> List (Node state)
+makeStartNodes start =
+    List.map (\state -> ( state, False, 0 )) start
+
+
 {-| Performs an uninformed search.
 -}
 search :
@@ -137,7 +145,7 @@ search :
     -> WithBasicSearch a state
     -> Maybe (Limit state)
     -> Int
-    -> List (Node state)
+    -> List state
     -> SearchResult state
 search buffer uninformed maybeLimit iteration start =
     let
@@ -183,7 +191,7 @@ search buffer uninformed maybeLimit iteration start =
                                 ( state, False, depth ) ->
                                     Ongoing state <| nextStep state depth
     in
-        examineHead <| buffer.init start
+        examineHead <| buffer.init (makeStartNodes start)
 
 
 {-| Performs an uninformed and unbounded search.
@@ -191,7 +199,7 @@ search buffer uninformed maybeLimit iteration start =
 unboundedSearch :
     Buffer state buffer
     -> WithBasicSearch a state
-    -> List (Node state)
+    -> List state
     -> SearchResult state
 unboundedSearch buffer uninformed =
     search buffer uninformed Nothing 0
@@ -203,7 +211,7 @@ orderedSearch :
     (WithBasicSearch a state -> Compare state)
     -> WithBasicSearch a state
     -> Maybe (Limit state)
-    -> List (Node state)
+    -> List state
     -> SearchResult state
 orderedSearch comparison basicSearch maybeLimit =
     search (ordered <| comparison basicSearch) basicSearch maybeLimit 0
@@ -214,7 +222,7 @@ orderedSearch comparison basicSearch maybeLimit =
 unboundedOrderedSearch :
     (WithBasicSearch a state -> Compare state)
     -> WithBasicSearch a state
-    -> List (Node state)
+    -> List state
     -> SearchResult state
 unboundedOrderedSearch comparison basicSearch =
     search (ordered <| comparison basicSearch) basicSearch Nothing 0
@@ -228,7 +236,7 @@ iterativeSearch :
     Buffer state buffer
     -> WithBasicSearch a state
     -> Limit state
-    -> List (Node state)
+    -> List state
     -> SearchResult state
 iterativeSearch buffer basicSearch limit start =
     let
@@ -309,7 +317,7 @@ compareF informed =
 {-| Performs an unbounded depth first search. Depth first searches can easily
     fall into infinite loops.
 -}
-depthFirst : WithBasicSearch a state -> List (Node state) -> SearchResult state
+depthFirst : WithBasicSearch a state -> List state -> SearchResult state
 depthFirst =
     unboundedSearch fifo
 
@@ -317,7 +325,7 @@ depthFirst =
 {-| Performs an unbounded breadth first search. Breadth first searches store
     a lot of pending nodes in the buffer, so quickly run out of space.
 -}
-breadthFirst : WithBasicSearch a state -> List (Node state) -> SearchResult state
+breadthFirst : WithBasicSearch a state -> List state -> SearchResult state
 breadthFirst =
     unboundedSearch lifo
 
@@ -326,7 +334,7 @@ breadthFirst =
     has the highest f value (f = heuristic + cost).
     The seach will only be optimal if the heuristic function is monotonic.
 -}
-aStar : Informed state -> List (Node state) -> SearchResult state
+aStar : Informed state -> List state -> SearchResult state
 aStar =
     unboundedOrderedSearch compareF
 
@@ -334,7 +342,7 @@ aStar =
 {-| Performs a greedy heuristic search.  This is one that always follows the
     search node that has the highest h value (h = heuristic).
 -}
-greedy : Informed state -> List (Node state) -> SearchResult state
+greedy : Informed state -> List state -> SearchResult state
 greedy =
     unboundedOrderedSearch compareH
 
@@ -344,7 +352,7 @@ greedy =
    boundary of the search will have a roughly uniform cost as the search
    space is searched by increasing cost.
 -}
-uniformCost : WithBasicSearch a state -> List (Node state) -> SearchResult state
+uniformCost : WithBasicSearch a state -> List state -> SearchResult state
 uniformCost =
     unboundedOrderedSearch compareC
 
@@ -374,14 +382,14 @@ fLimit informed maxF _ ( state, _, _ ) =
 
 {-| Implements an uninformed search that is bounded to a specified maximum depth.
 -}
-depthBounded : WithBasicSearch a state -> Int -> List (Node state) -> SearchResult state
+depthBounded : WithBasicSearch a state -> Int -> List state -> SearchResult state
 depthBounded basicSearch maxDepth =
     search fifo basicSearch (Just <| depthLimit maxDepth) 0
 
 
 {-| Implements a cost bounded search. This search will proceed depth first.
 -}
-costBounded : WithBasicSearch a state -> Float -> List (Node state) -> SearchResult state
+costBounded : WithBasicSearch a state -> Float -> List state -> SearchResult state
 costBounded basicSearch maxCost =
     search fifo basicSearch (Just <| costLimit basicSearch maxCost) 0
 
@@ -389,7 +397,7 @@ costBounded basicSearch maxCost =
 {-| Implements a cost bounded search. This search will proceed depth first and
     does not use the heuristic to order search nodes at all.
 -}
-fBounded : Informed state -> Float -> List (Node state) -> SearchResult state
+fBounded : Informed state -> Float -> List state -> SearchResult state
 fBounded informed maxF =
     search fifo informed (Just <| fLimit informed maxF) 0
 
@@ -417,11 +425,7 @@ iterativeCostLimit basicSearch multiple iteration ( state, _, _ ) =
     multiplied by a specified multiple to calculate the maximum depth allowed
     at a given iteration.
 -}
-iterativeDeepening :
-    Int
-    -> WithBasicSearch a state
-    -> List (Node state)
-    -> SearchResult state
+iterativeDeepening : Int -> WithBasicSearch a state -> List state -> SearchResult state
 iterativeDeepening multiple basicSearch =
     iterativeSearch fifo basicSearch (iterativeDepthLimit multiple)
 
@@ -431,11 +435,7 @@ iterativeDeepening multiple basicSearch =
     multiplied by a specified multiple to calculate the maximum cost allowed
     at a given iteration.
 -}
-iterativeCostIncreasing :
-    Float
-    -> WithBasicSearch a state
-    -> List (Node state)
-    -> SearchResult state
+iterativeCostIncreasing : Float -> WithBasicSearch a state -> List state -> SearchResult state
 iterativeCostIncreasing multiple basicSearch =
     iterativeSearch fifo basicSearch (iterativeCostLimit basicSearch multiple)
 
@@ -465,7 +465,7 @@ next result =
     number of iterations.
    * This function will recursively apply the search until either a Goal state
      is found or the walk over the search space is Complete, or the iteration
-     count is exhausted in which case an Ongoing search will be returned.
+     count is exhausted in which case an Ongoing search may be returned.
 -}
 nextN : Int -> SearchResult state -> SearchResult state
 nextN count result =
@@ -487,6 +487,8 @@ nextN count result =
    * The result of this function will never be an Ongoing search. This
      function will recursively apply the search until either a Goal state is
      found or the walk over the search space is Complete.
+   * If the search is bad and no goal can ever be found, this function may
+     infnite loop.
 -}
 nextGoal : SearchResult state -> SearchResult state
 nextGoal result =

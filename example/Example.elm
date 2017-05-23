@@ -8,5 +8,5 @@ import RiverCrossing
 main =
     text <|
         toString <|
-            Search.nextGoal <|
+            Search.nextN 1000 <|
                 Search.iterativeDeepening 1 RiverCrossing.uninformed [ ( RiverCrossing.start, False, 0 ) ]

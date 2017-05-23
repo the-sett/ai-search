@@ -16,6 +16,7 @@ module Search
         , iterativeDeepening
         , iterativeCostIncreasing
         , next
+        , nextN
         , nextGoal
         )
 
@@ -28,7 +29,7 @@ module Search
 @docs SearchResult
 
 # Helper functions for iterating searches to produce results:
-@docs next, nextGoal
+@docs next, nextN, nextGoal
 
 # Uninformed search strategies:
 @docs breadthFirst, depthFirst, depthBounded, costBounded, iterativeDeepening,
@@ -232,7 +233,10 @@ iterativeSearch :
 iterativeSearch buffer basicSearch limit start =
     let
         iteration count =
-            case (search buffer basicSearch (Just limit) 0 start) of
+            evaluate count (search buffer basicSearch (Just limit) count start)
+
+        evaluate count result =
+            case (Debug.log "evaluate" result) of
                 Complete ->
                     iteration (count + 1)
 
@@ -240,7 +244,7 @@ iterativeSearch buffer basicSearch limit start =
                     Goal state cont
 
                 Ongoing state cont ->
-                    Ongoing state cont
+                    Ongoing state (\() -> evaluate count (cont ()))
     in
         iteration 0
 
@@ -457,9 +461,31 @@ next result =
             cont ()
 
 
+{-| Continues a search result, to produce the next search goal up to a limited
+    number of iterations.
+   * This function will recursively apply the search until either a Goal state
+     is found or the walk over the search space is Complete, or the iteration
+     count is exhausted in which case an Ongoing search will be returned.
+-}
+nextN : Int -> SearchResult state -> SearchResult state
+nextN count result =
+    case result of
+        Complete ->
+            Complete
+
+        Goal state cont ->
+            Goal state cont
+
+        Ongoing _ cont ->
+            if count > 0 then
+                cont () |> nextN (count - 1)
+            else
+                cont ()
+
+
 {-| Continues a search result, to produce the next search goal.
    * The result of this function will never be an Ongoing search. This
-     function will recursively apply the search until either a Goal state if
+     function will recursively apply the search until either a Goal state is
      found or the walk over the search space is Complete.
 -}
 nextGoal : SearchResult state -> SearchResult state

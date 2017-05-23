@@ -1,7 +1,7 @@
 module RiverCrossing exposing (uninformed, start)
 
 import EveryDict as Dict exposing (EveryDict)
-import Search exposing (Step, Uninformed)
+import Search
 import Maybe.Extra
 
 
@@ -118,7 +118,7 @@ goal state =
 -}
 
 
-step : Step State
+step : Search.Step State
 step node =
     List.filterMap (\character -> move character node)
         characters
@@ -128,7 +128,7 @@ step node =
 {- Packages the search as an uninformed search. -}
 
 
-uninformed : Uninformed State
+uninformed : Search.Uninformed State
 uninformed =
     { step = step
     , cost = \_ -> 1.0

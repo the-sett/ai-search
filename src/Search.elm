@@ -3,7 +3,6 @@ module Search
         ( SearchResult(..)
         , Step
         , Uninformed
-        , WithBasicSearch
         , Informed
         , breadthFirst
         , depthFirst
@@ -23,7 +22,7 @@ module Search
 {-|
 
 # Input types for searches:
-@docs Step, WithBasicSearch, Uninformed, Informed
+@docs Step, Uninformed, Informed
 
 # The search output type:
 @docs SearchResult
@@ -86,14 +85,19 @@ type alias WithHeuristic a state =
     an uninformed (non-heuristic) search.
 -}
 type alias Uninformed state =
-    WithBasicSearch {} state
+    { step : Step state
+    , cost : state -> Float
+    }
 
 
 {-| Defines the type of a bundle of operators that need to be supplied to conduct
     an informed (heuristic) search.
 -}
 type alias Informed state =
-    WithHeuristic (WithBasicSearch {} state) state
+    { step : Step state
+    , cost : state -> Float
+    , heuristic : state -> Float
+    }
 
 
 {-| Defines the type of a function that compares two states and orders them.

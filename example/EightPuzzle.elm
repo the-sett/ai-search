@@ -1,7 +1,9 @@
 module EightPuzzle exposing (informed, start)
 
 import Search
-import Array2D exposing (Array2D)
+import Random.List
+import Random
+import List.Extra exposing (swapAt)
 
 
 type Move
@@ -12,7 +14,7 @@ type Move
 
 
 type alias State =
-    { board : Array2D Int
+    { board : List Int
     , xSize : Int
     , ySize : Int
     }
@@ -32,9 +34,31 @@ goalList x y =
         gen x y 0
 
 
+seed =
+    Random.initialSeed 10
+
+
+offset x y width =
+    y * width + x
+
+
+swap : Int -> Int -> List a -> List a
+swap a b list =
+    swapAt a b list
+        |> Maybe.withDefault list
+
+
+shuffled : Int -> Int -> List Int
+shuffled x y =
+    goalList x y
+        |> Random.List.shuffle
+        |> (flip Random.step) seed
+        |> Tuple.first
+
+
 start : Int -> Int -> State
 start x y =
-    { board = Array2D.repeat x y 0
+    { board = shuffled x y
     , xSize = x
     , ySize = y
     }

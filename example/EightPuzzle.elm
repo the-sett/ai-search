@@ -6,13 +6,6 @@ import Random
 import List.Extra exposing (swapAt)
 
 
-type Move
-    = Up
-    | Down
-    | Left
-    | Right
-
-
 type alias State =
     { board : List Int
     , xSize : Int
@@ -20,18 +13,8 @@ type alias State =
     }
 
 
-goalList : Int -> Int -> List Int
-goalList x y =
-    let
-        gen gx gy i =
-            if gx > 0 then
-                i :: gen (gx - 1) gy (i + 1)
-            else if gy > 0 then
-                i :: gen x (gy - 1) (i + 1)
-            else
-                []
-    in
-        gen x y 0
+
+{- Constructors for goal and random board states. -}
 
 
 seed =
@@ -42,10 +25,9 @@ offset x y width =
     y * width + x
 
 
-swap : Int -> Int -> List a -> List a
-swap a b list =
-    swapAt a b list
-        |> Maybe.withDefault list
+goalList : Int -> Int -> List Int
+goalList x y =
+    List.range 0 (x * y)
 
 
 shuffled : Int -> Int -> List Int
@@ -64,13 +46,40 @@ start x y =
     }
 
 
+swap : Int -> Int -> List a -> List a
+swap a b list =
+    swapAt a b list
+        |> Maybe.withDefault list
+
+
+
+{- Board operations and goal checks. -}
+
+
+type Move
+    = Up
+    | Down
+    | Left
+    | Right
+
+
+move : Move -> State -> Maybe ( State, Bool )
+move move state =
+    Nothing
+
+
+goal : State -> Bool
+goal state =
+    state.board == goalList state.xSize state.ySize
+
+
 step : Search.Step State
 step state =
     [ ( state, True ) ]
 
 
 
-{- Packages the search operators. -}
+{- Packages the search operators as an informed search. -}
 
 
 informed : Search.Informed State

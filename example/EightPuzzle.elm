@@ -3,7 +3,7 @@ module EightPuzzle exposing (informed, start)
 import Search
 import Random.List
 import Random
-import List.Extra exposing (swapAt)
+import List.Extra exposing (swapAt, elemIndex)
 
 
 type alias State =
@@ -40,16 +40,30 @@ shuffled x y =
 
 start : Int -> Int -> State
 start x y =
-    { board = shuffled x y
-    , xSize = x
-    , ySize = y
-    }
+    let
+        swaps =
+            countSwaps <| shuffled x y
+    in
+        { board = shuffled x y
+        , xSize = x
+        , ySize = y
+        }
 
 
 swap : Int -> Int -> List a -> List a
 swap a b list =
     swapAt a b list
         |> Maybe.withDefault list
+
+
+countSwaps : List Int -> Int
+countSwaps list =
+    let
+        d =
+            Debug.log "countSwaps" <|
+                List.map (\tile -> elemIndex tile list) (goalList 3 3)
+    in
+        0
 
 
 

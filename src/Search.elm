@@ -421,8 +421,8 @@ costBounded basicSearch maxCost =
     search fifo basicSearch (Just <| costLimit basicSearch maxCost) 0
 
 
-{-| Implements a cost bounded search. This search will proceed depth first and
-does not use the heuristic to order search nodes at all.
+{-| Implements an f value (f = heuristic + cost) bounded search. This search will
+proceed depth first.
 -}
 fBounded : Informed state -> Float -> List state -> SearchResult state
 fBounded informed maxF =
@@ -457,7 +457,7 @@ iterativeDeepening multiple basicSearch =
     iterativeSearch fifo basicSearch (iterativeDepthLimit multiple)
 
 
-{-| Implements an iterative cost increasing. This search proceed depth first
+{-| Implements an iterative cost increasing search. This search proceed depth first
 but repeats at progressively larger cost limits. The iteration number is
 multiplied by a specified multiple to calculate the maximum cost allowed
 at a given iteration.

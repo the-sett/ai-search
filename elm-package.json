@@ -1,18 +1,18 @@
 {
-    "version": "3.1.1",
-    "summary": "AI Search for Elm",
-    "repository": "https://github.com/the-sett/ai-search.git",
-    "license": "BSD",
-    "source-directories": [
-        "src/",
-        "example/"
-    ],
-    "exposed-modules": [
-        "Search"
-    ],
-    "dependencies": {
-        "elm-lang/core": "5.0.0 <= v < 6.0.0",
-        "tsfoster/elm-heap": "2.1.0 <= v < 3.0.0"
-    },
-    "elm-version": "0.18.0 <= v < 0.19.0"
+  "version": "3.1.0",
+  "summary": "AI Search for Elm",
+  "repository": "https://github.com/the-sett/ai-search.git",
+  "license": "BSD",
+  "source-directories": [
+    "src/",
+    "example/"
+  ],
+  "exposed-modules": [
+    "Search"
+  ],
+  "dependencies": {
+    "elm-lang/core": "5.0.0 <= v < 6.0.0",
+    "TSFoster/elm-heap": "2.1.0 <= v < 3.0.0"
+  },
+  "elm-version": "0.18.0 <= v < 0.19.0"
 }

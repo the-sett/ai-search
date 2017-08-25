@@ -4,7 +4,7 @@ module Search
         , Step
         , Uninformed
         , Informed
-        , WithBasicSearch
+        , WithUninformed
         , breadthFirst
         , depthFirst
         , aStar
@@ -25,7 +25,7 @@ module Search
 
 # Input types for searches:
 
-@docs Step, Uninformed, Informed, WithBasicSearch
+@docs Step, Uninformed, Informed, WithUninformed
 
 
 # The search output type:
@@ -59,7 +59,15 @@ type alias Node state =
     ( state, Bool, Int )
 
 
-{-| Defines the possible outcomes of a search.
+{-| Defines the possible outcomes of a search. A search may produce the following
+results:
+
+  - Complete. The search space has been exhausted without finding a goal state.
+  - Goal. A goal state has been found. A function to find further results is also
+    returned, in order that the search may be continued to find more goals.
+  - Ongoing. A goal state has not been found yet. The state most recently examined
+    is returned along with a function to continue to the search.
+
 -}
 type SearchResult state
     = Complete
@@ -68,22 +76,13 @@ type SearchResult state
 
 
 {-| Defines the type of the step function that produces new states from existing
-ones. This is how the graph over the search space is defined.
+ones. This is how the graph over the search space is defined. The step function
+takes a state and provides a list of other states that can be reached from it.
+Each of the listed states is paired with a Bool that when true indiciates that
+a state is considered to be a goal of the search.
 -}
 type alias Step state =
     state -> List ( state, Bool )
-
-
-{-| Defines the type of a bundle of operators that need to be supplied to conduct
-an uninformed (non-heuristic) search. This is an extensible record so that
-heuristic searches can also take this type, making it easy to apply switch
-between heuristic and non-heuristic searches.
--}
-type alias WithBasicSearch a state =
-    { a
-        | step : Step state
-        , cost : state -> Float
-    }
 
 
 {-| Defines the type of a bundle of operators that need to be supplied to conduct
@@ -109,6 +108,18 @@ type alias Informed state =
     { step : Step state
     , cost : state -> Float
     , heuristic : state -> Float
+    }
+
+
+{-| Defines the type of a bundle of operators that need to be supplied to conduct
+an uninformed (non-heuristic) search. This is an extensible record so that
+heuristic searches can also have this type since they use the same cost and step
+functions. This makes it easy to switch from a heuristic to anon-heuristic search.
+-}
+type alias WithUninformed a state =
+    { a
+        | step : Step state
+        , cost : state -> Float
     }
 
 
@@ -158,7 +169,7 @@ makeStartNodes start =
 -}
 search :
     Buffer state buffer
-    -> WithBasicSearch a state
+    -> WithUninformed a state
     -> Maybe (Limit state)
     -> Int
     -> List state
@@ -214,7 +225,7 @@ search buffer uninformed maybeLimit iteration start =
 -}
 unboundedSearch :
     Buffer state buffer
-    -> WithBasicSearch a state
+    -> WithUninformed a state
     -> List state
     -> SearchResult state
 unboundedSearch buffer uninformed =
@@ -224,8 +235,8 @@ unboundedSearch buffer uninformed =
 {-| Performs an ordered search.
 -}
 orderedSearch :
-    (WithBasicSearch a state -> Compare state)
-    -> WithBasicSearch a state
+    (WithUninformed a state -> Compare state)
+    -> WithUninformed a state
     -> Maybe (Limit state)
     -> List state
     -> SearchResult state
@@ -236,8 +247,8 @@ orderedSearch comparison basicSearch maybeLimit =
 {-| Performs an ordered and unbounded search.
 -}
 unboundedOrderedSearch :
-    (WithBasicSearch a state -> Compare state)
-    -> WithBasicSearch a state
+    (WithUninformed a state -> Compare state)
+    -> WithUninformed a state
     -> List state
     -> SearchResult state
 unboundedOrderedSearch comparison basicSearch =
@@ -250,7 +261,7 @@ beginning at the next iteration.
 -}
 iterativeSearch :
     Buffer state buffer
-    -> WithBasicSearch a state
+    -> WithUninformed a state
     -> Limit state
     -> List state
     -> SearchResult state
@@ -316,7 +327,7 @@ compareH informed =
         compare (informed.heuristic state1) (informed.heuristic state2)
 
 
-compareC : WithBasicSearch a state -> Compare state
+compareC : WithUninformed a state -> Compare state
 compareC informed =
     \state1 state2 ->
         compare (informed.cost state1) (informed.cost state2)
@@ -333,7 +344,7 @@ compareF informed =
 {-| Performs an unbounded depth first search. Depth first searches can easily
 fall into infinite loops.
 -}
-depthFirst : WithBasicSearch a state -> List state -> SearchResult state
+depthFirst : WithUninformed a state -> List state -> SearchResult state
 depthFirst =
     unboundedSearch fifo
 
@@ -341,7 +352,7 @@ depthFirst =
 {-| Performs an unbounded breadth first search. Breadth first searches store
 a lot of pending nodes in the buffer, so quickly run out of space.
 -}
-breadthFirst : WithBasicSearch a state -> List state -> SearchResult state
+breadthFirst : WithUninformed a state -> List state -> SearchResult state
 breadthFirst =
     unboundedSearch lifo
 
@@ -368,7 +379,7 @@ has the lowest path cost. It is called a uniform cost search because the
 boundary of the search will have a roughly uniform cost as the search
 space is searched by increasing cost.
 -}
-uniformCost : WithBasicSearch a state -> List state -> SearchResult state
+uniformCost : WithUninformed a state -> List state -> SearchResult state
 uniformCost =
     unboundedOrderedSearch compareC
 
@@ -383,7 +394,7 @@ depthLimit maxDepth _ ( _, _, depth ) =
 {-| Implements a cost limit on search nodes for basic searches. This is a fixed
 limit, not iterative.
 -}
-costLimit : WithBasicSearch a state -> Float -> Limit state
+costLimit : WithUninformed a state -> Float -> Limit state
 costLimit basicSearch maxCost _ ( state, _, _ ) =
     basicSearch.cost state >= maxCost
 
@@ -398,14 +409,14 @@ fLimit informed maxF _ ( state, _, _ ) =
 
 {-| Implements an uninformed search that is bounded to a specified maximum depth.
 -}
-depthBounded : WithBasicSearch a state -> Int -> List state -> SearchResult state
+depthBounded : WithUninformed a state -> Int -> List state -> SearchResult state
 depthBounded basicSearch maxDepth =
     search fifo basicSearch (Just <| depthLimit maxDepth) 0
 
 
 {-| Implements a cost bounded search. This search will proceed depth first.
 -}
-costBounded : WithBasicSearch a state -> Float -> List state -> SearchResult state
+costBounded : WithUninformed a state -> Float -> List state -> SearchResult state
 costBounded basicSearch maxCost =
     search fifo basicSearch (Just <| costLimit basicSearch maxCost) 0
 
@@ -431,7 +442,7 @@ iterativeDepthLimit multiple iteration ( _, _, depth ) =
 iterative limit. The iteration number is multiplied by a specified multiple
 to calculate the maximum cost allowed at a given iteration.
 -}
-iterativeCostLimit : WithBasicSearch a state -> Float -> Limit state
+iterativeCostLimit : WithUninformed a state -> Float -> Limit state
 iterativeCostLimit basicSearch multiple iteration ( state, _, _ ) =
     basicSearch.cost state >= toFloat (iteration + 1) * multiple
 
@@ -441,7 +452,7 @@ but repeats at progressively larger depth limits. The iteration number is
 multiplied by a specified multiple to calculate the maximum depth allowed
 at a given iteration.
 -}
-iterativeDeepening : Int -> WithBasicSearch a state -> List state -> SearchResult state
+iterativeDeepening : Int -> WithUninformed a state -> List state -> SearchResult state
 iterativeDeepening multiple basicSearch =
     iterativeSearch fifo basicSearch (iterativeDepthLimit multiple)
 
@@ -451,7 +462,7 @@ but repeats at progressively larger cost limits. The iteration number is
 multiplied by a specified multiple to calculate the maximum cost allowed
 at a given iteration.
 -}
-iterativeCostIncreasing : Float -> WithBasicSearch a state -> List state -> SearchResult state
+iterativeCostIncreasing : Float -> WithUninformed a state -> List state -> SearchResult state
 iterativeCostIncreasing multiple basicSearch =
     iterativeSearch fifo basicSearch (iterativeCostLimit basicSearch multiple)
 
@@ -508,8 +519,8 @@ nextN count result =
   - The result of this function will never be an Ongoing search. This
     function will recursively apply the search until either a Goal state is
     found or the walk over the search space is Complete.
-  - If the search is bad and no goal can ever be found, this function may
-    infnite loop.
+  - If the search is insufficiently constrained and no goal can ever be found,
+    this function may infnite loop.
 
 -}
 nextGoal : SearchResult state -> SearchResult state

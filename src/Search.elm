@@ -306,7 +306,7 @@ ordered : Compare state -> Buffer state (Heap (Node state))
 ordered compare =
     { orelse = \node heap -> Heap.push node heap
     , head = \heap -> Heap.pop heap
-    , init = \list -> Heap.fromList (Heap.smallest |> Heap.byCompare (nodeCompare compare)) list
+    , init = \list -> Heap.fromList (Heap.smallest |> Heap.using (nodeCompare compare)) list
     }
 
 

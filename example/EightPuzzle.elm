@@ -4,6 +4,18 @@ import Search
 import Random.List
 import Random
 import List.Extra exposing (swapAt, elemIndex)
+import Html exposing (text)
+
+
+main =
+    text <|
+        toString <|
+            Search.nextN 250 <|
+                Search.iterativeDeepening 1 informed [ start 3 3 ]
+
+
+
+{- The puzzles state -}
 
 
 type alias State =

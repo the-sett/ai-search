@@ -3,6 +3,18 @@ module RiverCrossing exposing (uninformed, start)
 import EveryDict as Dict exposing (EveryDict)
 import Search
 import Maybe.Extra
+import Html exposing (text)
+
+
+main =
+    text <|
+        toString <|
+            Search.nextN 250 <|
+                Search.iterativeDeepening 1 uninformed [ start ]
+
+
+
+{- Description of the puzzles state. -}
 
 
 type Character
@@ -33,6 +45,10 @@ start =
         |> Dict.insert Wolf West
         |> Dict.insert Goat West
         |> Dict.insert Cabbage West
+
+
+
+{- Flips a position between east and west. -}
 
 
 switch position =

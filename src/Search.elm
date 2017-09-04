@@ -197,9 +197,6 @@ search buffer uninformed maybeLimit iteration start =
 
                     Just ( headNode, pendingStates ) ->
                         let
-                            d =
-                                Debug.log "head" headNode
-
                             nextStep state depth =
                                 case maybeLimit of
                                     Nothing ->

@@ -47,10 +47,8 @@ start =
         |> Dict.insert Cabbage West
 
 
-
-{- Flips a position between east and west. -}
-
-
+{-| Flips a position between east and west.
+-}
 switch position =
     case position of
         East ->
@@ -60,17 +58,16 @@ switch position =
             East
 
 
+{-| Moves the specified character to the opposite bank.
 
-{- Moves the specified character to the opposite bank.
-   * The farmer must always be in the boat for the move, so moving a non-farmer
-     will automatically include the farmer in the move.
-   * When moving a non-farmer the farmer must be on the same side as the thing
-     being moved, or else the boat will not be there to make the move.
-   * States resulting in the goat or cabbage being eaten will result in Nothing.
-   * The goal state where all are on the West bank will be marked as succesfull.
+  - The farmer must always be in the boat for the move, so moving a non-farmer
+    will automatically include the farmer in the move.
+  - When moving a non-farmer the farmer must be on the same side as the thing
+    being moved, or else the boat will not be there to make the move.
+  - States resulting in the goat or cabbage being eaten will result in Nothing.
+  - The goal state where all are on the West bank will be marked as succesfull.
+
 -}
-
-
 move : Character -> State -> Maybe ( State, Bool )
 move character state =
     let
@@ -96,10 +93,8 @@ move character state =
             |> Maybe.andThen (\state -> Just ( state, goal state ))
 
 
-
-{- Checks if a state results in the goat or cabbage being eaten. -}
-
-
+{-| Checks if a state results in the goat or cabbage being eaten.
+-}
 illegal : State -> Bool
 illegal state =
     let
@@ -119,31 +114,24 @@ illegal state =
             || (farmerFlip == goat && farmerFlip == cabbage)
 
 
-
-{- Checks if a state matches the goal of everthing safely on the East bank. -}
-
-
+{-| Checks if a state matches the goal of everthing safely on the East bank.
+-}
 goal : State -> Bool
 goal state =
     List.foldl (\character result -> ((Dict.get character state) == Just East) && result) True characters
 
 
-
-{- Produces new states from a given state, by attempting to move each of the
-   characters in turn to see if that produces a valid new state.
+{-| Produces new states from a given state, by attempting to move each of the
+characters in turn to see if that produces a valid new state.
 -}
-
-
 step : Search.Step State
 step node =
     List.filterMap (\character -> move character node)
         characters
 
 
-
-{- Packages the search as an uninformed search. -}
-
-
+{-| Packages the search as an uninformed search.
+-}
 uninformed : Search.Uninformed State
 uninformed =
     { step = step

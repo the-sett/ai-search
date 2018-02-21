@@ -483,6 +483,11 @@ Like the A-star search, this search will find the optimal soluation given an
 admissable heuristic. As this search progresses depth first rather than sleecting
 the most promising nodes to follow, its memory requirements are lower than A-star.
 
+Note that to find the optimal solution, the search will need to be run until it
+completes an entire iteration, as when progressing depth first a less than optimal
+solution may be found first within the current iteration. There is currently no way
+to signal the completion of an iteration.
+
 -}
 iterativeDeepeningAStar : Float -> Informed state -> List state -> SearchResult state
 iterativeDeepeningAStar multiple informed =

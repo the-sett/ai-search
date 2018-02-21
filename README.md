@@ -16,3 +16,6 @@ the Elm reactor:
 ### More Searches that could be added to this package:
 
 Beam Search [https://en.wikipedia.org/wiki/Beam_search]
+B* [https://en.wikipedia.org/wiki/B*]
+SMA* [https://en.wikipedia.org/wiki/SMA*]
+Fringe Search [https://en.wikipedia.org/wiki/Fringe_search]

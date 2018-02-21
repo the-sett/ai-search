@@ -15,6 +15,7 @@ module Search
         , fBounded
         , iterativeDeepening
         , iterativeCostIncreasing
+        , iterativeDeepeningAStar
         , next
         , nextN
         , nextGoal
@@ -46,7 +47,7 @@ module Search
 
 # Informed search strategies:
 
-@docs aStar, greedy, fBounded
+@docs aStar, greedy, fBounded, iterativeDeepeningAStar
 
 -}
 
@@ -444,6 +445,15 @@ iterativeCostLimit basicSearch multiple iteration ( state, _, _ ) =
     basicSearch.cost state >= toFloat (iteration + 1) * multiple
 
 
+{-| Implements an f-limit on search nodes for basic searches (f = cost + heuristic).
+This is an iterative limit. The iteration number is multiplied by a specified multiple
+to calculate the maximum cost allowed at a given iteration.
+-}
+iterativeFLimit : Informed state -> Float -> Limit state
+iterativeFLimit informed multiple iteration ( state, _, _ ) =
+    informed.heuristic state + informed.cost state >= toFloat (iteration + 1) * multiple
+
+
 {-| Implements an iterative deepening search. This search proceed depth first
 but repeats at progressively larger depth limits. The iteration number is
 multiplied by a specified multiple to calculate the maximum depth allowed
@@ -462,6 +472,21 @@ at a given iteration.
 iterativeCostIncreasing : Float -> WithUninformed a state -> List state -> SearchResult state
 iterativeCostIncreasing multiple basicSearch =
     iterativeSearch fifo basicSearch (iterativeCostLimit basicSearch multiple)
+
+
+{-| Implements an iterative deepding A-star search. This search proceed depth
+first but repeats at progressively larger f-limits (f = cost + heuristic). The
+iteration number is multiplied by a specified multiple to calculate the maximum
+cost allowed at a given iteration.
+
+Like the A-star search, this search will find the optimal soluation given an
+admissable heuristic. As this search progresses depth first rather than sleecting
+the most promising nodes to follow, its memory requirements are lower than A-star.
+
+-}
+iterativeDeepeningAStar : Float -> Informed state -> List state -> SearchResult state
+iterativeDeepeningAStar multiple informed =
+    iterativeSearch fifo informed (iterativeFLimit informed multiple)
 
 
 

@@ -8,7 +8,7 @@ Immediate move reversals are prevented (up then down, left then right...).
 Advanced heuristics such as linear conflict or admissable database heuristics
 are not implemented. Linear conflict at least is needed to solve 4x4 puzzles.
 
-An A* search can be used, IDA* will be more efficient.
+An A* search can be used, IDA* will use less memory.
 
 -}
 

@@ -9,8 +9,8 @@ import Search exposing (SearchResult(..))
 
 main =
     viewResult <|
-        Search.nextN 5000 <|
-            Search.aStar informed [ start 3 seed ]
+        Search.nextN 50000 <|
+            Search.iterativeDeepeningAStar 5 informed [ start 3 seed ]
 
 
 viewResult : SearchResult State -> Html Never

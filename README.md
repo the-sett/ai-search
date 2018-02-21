@@ -12,3 +12,7 @@ the Elm reactor:
 
     cd example
     elm-reactor
+
+### More Searches that could be added to this package:
+
+Beam Search [https://en.wikipedia.org/wiki/Beam_search]

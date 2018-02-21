@@ -8,6 +8,8 @@ Immediate move reversals are prevented (up then down, left then right...).
 Advanced heuristics such as linear conflict or admissable database heuristics
 are not implemented. Linear conflict at least is needed to solve 4x4 puzzles.
 
+An A* search can be used, IDA* will be more efficient.
+
 -}
 
 import Array exposing (Array)
@@ -215,6 +217,8 @@ board is the correct final state of the puzzle.
   - A tile cannot be moved off the edge of the board.
   - A tile will be moved into the empty position only, tiles cannot be swapped
     with other tiles.
+  - A tile will not be moved back into the position it was in the previous board
+    state, eliminating the worst source of repeated board states.
 
 -}
 move : Direction -> State -> Maybe ( State, Bool )

@@ -1,60 +1,21 @@
-module EightPuzzle exposing (informed, start)
+module EightPuzzle.Search exposing (State, Previous(..), informed, start)
+
+{-| Constructs an informed search for the 8-puzzle family.
+
+The Manhatten Heuristic is used.
+Immediate move reversals are prevented (up then down, left then right...).
+
+Advanced heuristics such as linear conflict or admissable database heuristics
+are not implemented. Linear conflict at least is needed to solve 4x4 puzzles.
+
+-}
 
 import Array exposing (Array)
-import Search exposing (SearchResult(..))
+import Search
 import Random.List
 import Random
 import List.Extra exposing (swapAt, elemIndex, zip)
 import Lazy.List as LL
-import Html exposing (Html, text, div)
-
-
-main =
-    viewResult <|
-        Search.nextN 5000 <|
-            Search.aStar informed [ start 3 ]
-
-
-viewResult : SearchResult State -> Html Never
-viewResult result =
-    case result of
-        Complete ->
-            text "Search space exhausted with no solution found."
-
-        Goal state _ ->
-            viewMoves state
-
-        Ongoing state _ ->
-            viewMoves state
-
-
-viewMoves : State -> Html Never
-viewMoves state =
-    let
-        previousMoves state =
-            case state.previous of
-                None ->
-                    [ Html.p [] [ stateToString state |> text ] ]
-
-                Previous prevState ->
-                    (Html.p [] [ stateToString state |> text ]) :: previousMoves prevState
-    in
-        div [] (previousMoves state |> List.reverse)
-
-
-stateToString : State -> String
-stateToString state =
-    (Array.toList state.board |> toString)
-        ++ ", distance = "
-        ++ (toString state.distance)
-        ++ ", numMoves = "
-        ++ (toString state.numMoves)
-        ++ ", lastMove = "
-        ++ (toString state.lastMove)
-
-
-seed =
-    Random.initialSeed 120
 
 
 {-| The puzzles state
@@ -206,8 +167,8 @@ goalList size =
 The puzzle state is set up from this with the correct size, empty tile position
 and distance metric.
 -}
-start : Int -> State
-start size =
+start : Int -> Random.Seed -> State
+start size seed =
     let
         solvableShuffle size seed =
             let

@@ -1,19 +1,56 @@
 module EightPuzzle exposing (informed, start)
 
 import Array exposing (Array)
-import Search
+import Search exposing (SearchResult(..))
 import Random.List
 import Random
 import List.Extra exposing (swapAt, elemIndex, zip)
 import Lazy.List as LL
-import Html exposing (text)
+import Html exposing (Html, text, div)
 
 
 main =
-    text <|
-        toString <|
-            Search.nextN 2 <|
-                Search.aStar informed [ start 3 ]
+    viewResult <|
+        Search.nextN 5000 <|
+            Search.aStar informed [ start 3 ]
+
+
+viewResult : SearchResult State -> Html Never
+viewResult result =
+    case result of
+        Complete ->
+            text "Search space exhausted with no solution found."
+
+        Goal state _ ->
+            viewMoves state
+
+        Ongoing state _ ->
+            viewMoves state
+
+
+viewMoves : State -> Html Never
+viewMoves state =
+    let
+        previousMoves state =
+            case state.previous of
+                None ->
+                    [ Html.p [] [ stateToString state |> text ] ]
+
+                Previous prevState ->
+                    (Html.p [] [ stateToString state |> text ]) :: previousMoves prevState
+    in
+        div [] (previousMoves state |> List.reverse)
+
+
+stateToString : State -> String
+stateToString state =
+    (Array.toList state.board |> toString)
+        ++ ", distance = "
+        ++ (toString state.distance)
+        ++ ", numMoves = "
+        ++ (toString state.numMoves)
+        ++ ", lastMove = "
+        ++ (toString state.lastMove)
 
 
 seed =
@@ -27,7 +64,15 @@ type alias State =
     , size : Int -- Board dimension (dimension x dimension).
     , emptyTile : Int -- Empty tile location.
     , distance : Int -- Manhattan distance of the entire board.
+    , numMoves : Int -- Number of moves taken to get here.
+    , lastMove : Maybe Direction -- The last move taken to get here.
+    , previous : Previous -- The state just before this one.
     }
+
+
+type Previous
+    = None
+    | Previous State
 
 
 
@@ -138,7 +183,8 @@ distance size board =
         |> List.sum
 
 
-{-| Provides a shuffled board. Note: this board may not be solvable, additional checks are needed
+{-| Provides a shuffled board.
+Note: this board may not be solvable, additional checks are needed
 to see if it is solvable.
 -}
 shuffled : Int -> Random.Seed -> ( List Int, Random.Seed )
@@ -153,7 +199,7 @@ contiguously from zero up to the board size.
 -}
 goalList : Int -> List Int
 goalList size =
-    List.range 0 (size * size)
+    List.range 0 (size * size - 1)
 
 
 {-| Provides a shuffled board that is also solvable.
@@ -180,6 +226,9 @@ start size =
         , size = size
         , emptyTile = elemIndex 0 board |> Maybe.withDefault 0
         , distance = distance size board
+        , numMoves = 0
+        , lastMove = Nothing
+        , previous = None
         }
 
 
@@ -213,33 +262,47 @@ move direction state =
         ( x, y ) =
             offsetToXy state.size state.emptyTile
 
-        newState =
+        previousMoveIs direction state =
+            state.lastMove == (Just direction)
+
+        maybeState =
             case direction of
                 Up ->
-                    if x <= 0 then
+                    if x <= 0 || previousMoveIs Down state then
                         Nothing
                     else
                         Just <| swap (x - 1) y state
 
                 Right ->
-                    if y >= state.size - 1 then
+                    if y >= state.size - 1 || previousMoveIs Left state then
                         Nothing
                     else
                         Just <| swap x (y + 1) state
 
                 Down ->
-                    if x >= state.size - 1 then
+                    if x >= state.size - 1 || previousMoveIs Up state then
                         Nothing
                     else
                         Just <| swap (x + 1) y state
 
                 Left ->
-                    if y <= 0 then
+                    if y <= 0 || previousMoveIs Right state then
                         Nothing
                     else
                         Just <| swap x (y - 1) state
     in
-        newState |> Maybe.andThen (\state -> Just ( state, goal state ))
+        maybeState
+            |> Maybe.andThen
+                (\newState ->
+                    Just
+                        ( { newState
+                            | lastMove = Just direction
+                            , previous = Previous state
+                            , numMoves = state.numMoves + 1
+                          }
+                        , goal newState
+                        )
+                )
 
 
 {-| Checks if all the tiles are in the correct position.
@@ -263,6 +326,6 @@ step node =
 informed : Search.Informed State
 informed =
     { step = step
-    , cost = \_ -> 1.0
+    , cost = \state -> toFloat state.numMoves
     , heuristic = \state -> toFloat state.distance
     }

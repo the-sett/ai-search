@@ -1,11 +1,73 @@
 module Main exposing (..)
 
+import Html exposing (text, div, button)
+import Html.Events exposing (onClick)
 import Search
-import Html exposing (text)
+import Time exposing (Time)
+
+
+type alias Model =
+    { state : State
+    , running : Bool
+    , startTime : Int
+    , endTime : Int
+    }
+
+
+type Msg
+    = Run
+    | Pause
+    | StartTime Time
+    | EndTime Time
+
+
+init =
+    ( { state = 0
+      , running = False
+      , startTime = 0
+      , endTime = 0
+      }
+    , Cmd.none
+    )
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case (Debug.log "update" msg) of
+        Run ->
+            ( model, Cmd.none )
+
+        Pause ->
+            ( model, Cmd.none )
+
+        StartTime time ->
+            ( model, Cmd.none )
+
+        EndTime time ->
+            ( model, Cmd.none )
 
 
 main =
-    text "infinite loop timer"
+    Html.program
+        { init = init
+        , update = update
+        , subscriptions = \_ -> Sub.none
+        , view = view
+        }
+
+
+view model =
+    div []
+        [ if model.running then
+            button [ onClick Pause ] [ text "pause" ]
+          else
+            button [ onClick Run ] [ text "start" ]
+        , text (toString (model.state))
+        ]
+
+
+
+-- An infinite looping search space, just incremenets a counter.
 
 
 type alias State =

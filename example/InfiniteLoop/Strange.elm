@@ -10,19 +10,23 @@ type alias Model =
 
 
 type Msg
-    = Count Int
+    = Increment Int
 
 
 init =
-    ( { count = 0 }, message <| Count 0 )
+    ( { count = 0 }, message <| Increment 0 )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case (Debug.log "update" msg) of
-        Count val ->
+        Increment val ->
             if model.count < 10 then
-                ( { model | count = val }, message <| Count (val + 1) )
+                let
+                    nextValue =
+                        model.count + 1
+                in
+                    ( { model | count = nextValue }, message <| Increment nextValue )
             else
                 ( model, Cmd.none )
 

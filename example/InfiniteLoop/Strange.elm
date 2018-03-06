@@ -21,7 +21,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case (Debug.log "update" msg) of
         Increment val ->
-            if model.count < 10 then
+            if model.count < 100000 then
                 let
                     nextValue =
                         model.count + 1

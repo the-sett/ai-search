@@ -169,13 +169,13 @@ search buffer uninformed maybeLimit iteration start =
         examineHead : buffer -> SearchResult state
         examineHead queue =
             let
-                expand depth state queue =
+                expand depth state expandQueue =
                     \() ->
                         examineHead <|
-                            List.foldl (\( state, isGoal ) queue -> buffer.orelse ( state, isGoal, depth + 1 ) queue) queue (step state)
+                            List.foldl (\( nextState, isGoal ) remQueue -> buffer.orelse ( nextState, isGoal, depth + 1 ) remQueue) expandQueue (step state)
 
-                notExpand queue =
-                    \() -> examineHead queue
+                notExpand expandQueue =
+                    \() -> examineHead expandQueue
             in
             case buffer.head queue of
                 Nothing ->

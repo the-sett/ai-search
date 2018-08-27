@@ -1,9 +1,9 @@
-module RiverCrossing exposing (uninformed, start)
+module RiverCrossing exposing (start, uninformed)
 
 import EveryDict as Dict exposing (EveryDict)
-import Search
-import Maybe.Extra
 import Html exposing (text)
+import Maybe.Extra
+import Search
 
 
 main =
@@ -74,6 +74,7 @@ move character state =
         nextState =
             if character == Farmer then
                 Dict.update Farmer (Maybe.map switch) state |> Just
+
             else
                 let
                     farmerPos =
@@ -82,15 +83,16 @@ move character state =
                     characterPos =
                         Dict.get character state
                 in
-                    if (farmerPos == characterPos) then
-                        Just <|
-                            Dict.update Farmer (Maybe.map switch) <|
-                                Dict.update character (Maybe.map switch) state
-                    else
-                        Nothing
+                if farmerPos == characterPos then
+                    Just <|
+                        Dict.update Farmer (Maybe.map switch) <|
+                            Dict.update character (Maybe.map switch) state
+
+                else
+                    Nothing
     in
-        Maybe.Extra.filter (not << illegal) nextState
-            |> Maybe.andThen (\state -> Just ( state, goal state ))
+    Maybe.Extra.filter (not << illegal) nextState
+        |> Maybe.andThen (\state -> Just ( state, goal state ))
 
 
 {-| Checks if a state results in the goat or cabbage being eaten.
@@ -99,7 +101,7 @@ illegal : State -> Bool
 illegal state =
     let
         farmerFlip =
-            (Maybe.map switch) <| Dict.get Farmer state
+            Maybe.map switch <| Dict.get Farmer state
 
         wolf =
             Dict.get Wolf state
@@ -110,15 +112,15 @@ illegal state =
         cabbage =
             Dict.get Cabbage state
     in
-        (farmerFlip == wolf && farmerFlip == goat)
-            || (farmerFlip == goat && farmerFlip == cabbage)
+    (farmerFlip == wolf && farmerFlip == goat)
+        || (farmerFlip == goat && farmerFlip == cabbage)
 
 
 {-| Checks if a state matches the goal of everthing safely on the East bank.
 -}
 goal : State -> Bool
 goal state =
-    List.foldl (\character result -> ((Dict.get character state) == Just East) && result) True characters
+    List.foldl (\character result -> (Dict.get character state == Just East) && result) True characters
 
 
 {-| Produces new states from a given state, by attempting to move each of the

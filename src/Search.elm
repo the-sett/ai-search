@@ -1,25 +1,11 @@
-module Search
-    exposing
-        ( SearchResult(..)
-        , Step
-        , Uninformed
-        , Informed
-        , WithUninformed
-        , breadthFirst
-        , depthFirst
-        , aStar
-        , greedy
-        , uniformCost
-        , depthBounded
-        , costBounded
-        , fBounded
-        , iterativeDeepening
-        , iterativeCostIncreasing
-        , iterativeDeepeningAStar
-        , next
-        , nextN
-        , nextGoal
-        )
+module Search exposing
+    ( Step, Uninformed, Informed, WithUninformed
+    , SearchResult(..)
+    , next, nextN, nextGoal
+    , breadthFirst, depthFirst, depthBounded, costBounded, uniformCost
+    , iterativeDeepening, iterativeCostIncreasing
+    , aStar, greedy, fBounded, iterativeDeepeningAStar
+    )
 
 {-|
 
@@ -184,39 +170,39 @@ search buffer uninformed maybeLimit iteration start =
         examineHead queue =
             let
                 expand depth state queue =
-                    (\() ->
+                    \() ->
                         examineHead <|
-                            List.foldl (\( state, isGoal ) queue -> (buffer.orelse ( state, isGoal, depth + 1 ) queue)) queue (step state)
-                    )
+                            List.foldl (\( state, isGoal ) queue -> buffer.orelse ( state, isGoal, depth + 1 ) queue) queue (step state)
 
                 notExpand queue =
-                    (\() -> examineHead queue)
+                    \() -> examineHead queue
             in
-                case buffer.head queue of
-                    Nothing ->
-                        Complete
+            case buffer.head queue of
+                Nothing ->
+                    Complete
 
-                    Just ( headNode, pendingStates ) ->
-                        let
-                            nextStep state depth =
-                                case maybeLimit of
-                                    Nothing ->
-                                        (expand depth state pendingStates)
+                Just ( headNode, pendingStates ) ->
+                    let
+                        nextStep state depth =
+                            case maybeLimit of
+                                Nothing ->
+                                    expand depth state pendingStates
 
-                                    Just limit ->
-                                        if (limit iteration ( state, False, depth )) then
-                                            (notExpand pendingStates)
-                                        else
-                                            (expand depth state pendingStates)
-                        in
-                            case headNode of
-                                ( state, True, depth ) ->
-                                    Goal state <| nextStep state depth
+                                Just limit ->
+                                    if limit iteration ( state, False, depth ) then
+                                        notExpand pendingStates
 
-                                ( state, False, depth ) ->
-                                    Ongoing state <| nextStep state depth
+                                    else
+                                        expand depth state pendingStates
+                    in
+                    case headNode of
+                        ( state, True, depth ) ->
+                            Goal state <| nextStep state depth
+
+                        ( state, False, depth ) ->
+                            Ongoing state <| nextStep state depth
     in
-        examineHead <| buffer.init (makeStartNodes start)
+    examineHead <| buffer.init (makeStartNodes start)
 
 
 {-| Performs an uninformed and unbounded search.
@@ -279,7 +265,7 @@ iterativeSearch buffer basicSearch limit start =
                 Ongoing state cont ->
                     Ongoing state (\() -> evaluate count (cont ()))
     in
-        iteration 0
+    iteration 0
 
 
 {-| Implements a first-in first-out buffer using Lists.
@@ -355,7 +341,7 @@ breadthFirst =
     unboundedSearch lifo
 
 
-{-| Performs an A* search. This is one that always follows the search node that
+{-| Performs an A\* search. This is one that always follows the search node that
 has the highest f value (f = heuristic + cost).
 The seach will only be optimal if the heuristic function is monotonic.
 -}
@@ -537,6 +523,7 @@ nextN count result =
         Ongoing _ cont ->
             if count > 0 then
                 cont () |> nextN (count - 1)
+
             else
                 cont ()
 

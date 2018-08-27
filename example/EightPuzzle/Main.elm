@@ -1,8 +1,8 @@
 module EightPuzzle.Main exposing (main)
 
 import Array exposing (Array)
-import EightPuzzle.Search exposing (State, Previous(..), informed, start)
-import Html exposing (Html, text, div)
+import EightPuzzle.Search exposing (Previous(..), State, informed, start)
+import Html exposing (Html, div, text)
 import Random
 import Search exposing (SearchResult(..))
 
@@ -35,20 +35,20 @@ viewMoves state =
                     [ Html.p [] [ stateToString state |> text ] ]
 
                 Previous prevState ->
-                    (Html.p [] [ stateToString state |> text ]) :: previousMoves prevState
+                    Html.p [] [ stateToString state |> text ] :: previousMoves prevState
     in
-        div [] (previousMoves state |> List.reverse)
+    div [] (previousMoves state |> List.reverse)
 
 
 stateToString : State -> String
 stateToString state =
     (Array.toList state.board |> toString)
         ++ ", distance = "
-        ++ (toString state.distance)
+        ++ toString state.distance
         ++ ", numMoves = "
-        ++ (toString state.numMoves)
+        ++ toString state.numMoves
         ++ ", lastMove = "
-        ++ (toString state.lastMove)
+        ++ toString state.lastMove
 
 
 seed =

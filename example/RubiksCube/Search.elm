@@ -1,4 +1,4 @@
-module Search exposing (State, Previous(..), informed, start)
+module Search exposing (Previous(..), State, informed, start)
 
 
 dummay =

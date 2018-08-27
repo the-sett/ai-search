@@ -1,4 +1,4 @@
-module EightPuzzle.Search exposing (State, Previous(..), informed, start)
+module EightPuzzle.Search exposing (Previous(..), State, informed, start)
 
 {-| Constructs an informed search for the 8-puzzle family.
 
@@ -8,16 +8,16 @@ Immediate move reversals are prevented (up then down, left then right...).
 Advanced heuristics such as linear conflict or admissable database heuristics
 are not implemented. Linear conflict at least is needed to solve 4x4 puzzles.
 
-An A* search can be used, IDA* will use less memory.
+An A\* search can be used, IDA\* will use less memory.
 
 -}
 
 import Array exposing (Array)
-import Search
-import Random.List
-import Random
-import List.Extra exposing (swapAt, elemIndex, zip)
 import Lazy.List as LL
+import List.Extra exposing (elemIndex, swapAt, zip)
+import Random
+import Random.List
+import Search
 
 
 {-| The puzzles state
@@ -49,7 +49,7 @@ xyToOffset size x y =
 
 offsetToXy : Int -> Int -> ( Int, Int )
 offsetToXy size index =
-    ( index % size, index // size )
+    ( modBy size index, index // size )
 
 
 {-| Gets the tile at the specified index from the board.
@@ -70,7 +70,7 @@ solvable : Int -> List Int -> Bool
 solvable size tiles =
     let
         zeroRow =
-            1 + (Maybe.withDefault 0 (elemIndex 0 tiles)) // size
+            1 + Maybe.withDefault 0 (elemIndex 0 tiles) // size
 
         numberOfInversions =
             let
@@ -84,9 +84,9 @@ solvable size tiles =
                                 x /= 0 && y /= 0 && yi > xi && x > y
                             )
             in
-                LL.length inversions
+            LL.length inversions
     in
-        (zeroRow + numberOfInversions) % 2 == 0
+    modBy 2 (zeroRow + numberOfInversions) == 0
 
 
 {-| Swaps the tile at the specified location with the empty tile, to produce a new
@@ -107,11 +107,11 @@ swap x y state =
                 - manhattan (getTileAtIndex index state.board) state.size index
                 + manhattan (getTileAtIndex index state.board) state.size state.emptyTile
     in
-        { state
-            | board = newBoard
-            , emptyTile = index
-            , distance = newDistance
-        }
+    { state
+        | board = newBoard
+        , emptyTile = index
+        , distance = newDistance
+    }
 
 
 {-| Calculates the Manhattan distance of a specified tile at a specified location
@@ -132,10 +132,11 @@ manhattan tile size index =
         yDistance =
             abs (y - tileY)
     in
-        if tile == 0 then
-            0
-        else
-            xDistance + yDistance
+    if tile == 0 then
+        0
+
+    else
+        xDistance + yDistance
 
 
 {-| Calculates the Manhattan distance of all tiles on the board to their goal positions.
@@ -154,7 +155,7 @@ shuffled : Int -> Random.Seed -> ( List Int, Random.Seed )
 shuffled size seed =
     goalList size
         |> Random.List.shuffle
-        |> (flip Random.step) seed
+        |> (\b a -> Random.step a b) seed
 
 
 {-| Provides the goal state of the board. This consists of a list of integers numbered
@@ -177,22 +178,23 @@ start size seed =
                 ( try, newSeed ) =
                     shuffled size seed
             in
-                if solvable size try then
-                    try
-                else
-                    solvableShuffle size newSeed
+            if solvable size try then
+                try
+
+            else
+                solvableShuffle size newSeed
 
         board =
             solvableShuffle size seed
     in
-        { board = Array.fromList <| board
-        , size = size
-        , emptyTile = elemIndex 0 board |> Maybe.withDefault 0
-        , distance = distance size board
-        , numMoves = 0
-        , lastMove = Nothing
-        , previous = None
-        }
+    { board = Array.fromList <| board
+    , size = size
+    , emptyTile = elemIndex 0 board |> Maybe.withDefault 0
+    , distance = distance size board
+    , numMoves = 0
+    , lastMove = Nothing
+    , previous = None
+    }
 
 
 
@@ -228,46 +230,50 @@ move direction state =
             offsetToXy state.size state.emptyTile
 
         previousMoveIs direction state =
-            state.lastMove == (Just direction)
+            state.lastMove == Just direction
 
         maybeState =
             case direction of
                 Up ->
                     if x <= 0 || previousMoveIs Down state then
                         Nothing
+
                     else
                         Just <| swap (x - 1) y state
 
                 Right ->
                     if y >= state.size - 1 || previousMoveIs Left state then
                         Nothing
+
                     else
                         Just <| swap x (y + 1) state
 
                 Down ->
                     if x >= state.size - 1 || previousMoveIs Up state then
                         Nothing
+
                     else
                         Just <| swap (x + 1) y state
 
                 Left ->
                     if y <= 0 || previousMoveIs Right state then
                         Nothing
+
                     else
                         Just <| swap x (y - 1) state
     in
-        maybeState
-            |> Maybe.andThen
-                (\newState ->
-                    Just
-                        ( { newState
-                            | lastMove = Just direction
-                            , previous = Previous state
-                            , numMoves = state.numMoves + 1
-                          }
-                        , goal newState
-                        )
-                )
+    maybeState
+        |> Maybe.andThen
+            (\newState ->
+                Just
+                    ( { newState
+                        | lastMove = Just direction
+                        , previous = Previous state
+                        , numMoves = state.numMoves + 1
+                      }
+                    , goal newState
+                    )
+            )
 
 
 {-| Checks if all the tiles are in the correct position.

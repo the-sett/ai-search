@@ -1,6 +1,6 @@
-module Main exposing (..)
+module Main exposing (Model, Msg(..), State, init, main, step, uninformed, update, view)
 
-import Html exposing (text, div, button)
+import Html exposing (button, div, text)
 import Html.Events exposing (onClick)
 import Search
 import Time exposing (Time)
@@ -33,7 +33,7 @@ init =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case (Debug.log "update" msg) of
+    case Debug.log "update" msg of
         Run ->
             ( model, Cmd.none )
 
@@ -60,9 +60,10 @@ view model =
     div []
         [ if model.running then
             button [ onClick Pause ] [ text "pause" ]
+
           else
             button [ onClick Run ] [ text "start" ]
-        , text (toString (model.state))
+        , text (toString model.state)
         ]
 
 

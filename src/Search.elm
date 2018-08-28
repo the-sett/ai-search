@@ -254,6 +254,7 @@ iterativeSearch buffer basicSearch limit start =
         iteration count =
             evaluate count (search buffer basicSearch (Just limit) count start)
 
+        evaluate : Int -> SearchResult state -> SearchResult state
         evaluate count result =
             case result of
                 Complete ->

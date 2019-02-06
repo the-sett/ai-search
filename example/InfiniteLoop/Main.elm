@@ -61,8 +61,8 @@ update msg model =
                     Debug.crash "Search space should never find a goal."
 
                 Ongoing state more ->
-                    if model.running && model.state <= 1000000 then
-                        ( { model | state = state }, message <| Compute <| Search.nextN 999 result )
+                    if model.running && model.state <= 100000000 then
+                        ( { model | state = state }, message <| Compute <| Search.nextN 99 result )
                     else if model.running then
                         ( { model | state = state }, message Pause )
                     else
@@ -78,13 +78,19 @@ main =
         }
 
 
+br =
+    Html.br [] []
+
+
 view model =
     div []
         [ if model.running then
             button [ onClick Pause ] [ text "pause" ]
           else
             button [ onClick Run ] [ text "start" ]
+        , br
         , text (toString (model.state))
+        , br
         , if model.startTime /= 0 && model.endTime /= 0 then
             text "results"
           else

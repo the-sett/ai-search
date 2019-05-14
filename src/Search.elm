@@ -144,12 +144,14 @@ nodeCompare compare ( state1, _, _ ) ( state2, _, _ ) =
     compare state1 state2
 
 
-{-| Converts a list of states into search Nodes. It is assumed that the start
-states are never goal states, and are always at depth 0.
+{-| Converts a list of states into search Nodes.
+
+It is assumed that the start states are always at depth 0.
+
 -}
-makeStartNodes : List state -> List (Node state)
+makeStartNodes : List ( state, Bool ) -> List (Node state)
 makeStartNodes start =
-    List.map (\state -> ( state, False, 0 )) start
+    List.map (\( state, goal ) -> ( state, goal, 0 )) start
 
 
 {-| Performs an uninformed search.
@@ -159,7 +161,7 @@ search :
     -> WithUninformed a state
     -> Maybe (Limit state)
     -> Int
-    -> List state
+    -> List ( state, Bool )
     -> SearchResult state
 search buffer uninformed maybeLimit iteration start =
     let
@@ -210,7 +212,7 @@ search buffer uninformed maybeLimit iteration start =
 unboundedSearch :
     Buffer state buffer
     -> WithUninformed a state
-    -> List state
+    -> List ( state, Bool )
     -> SearchResult state
 unboundedSearch buffer uninformed =
     search buffer uninformed Nothing 0
@@ -222,7 +224,7 @@ orderedSearch :
     (WithUninformed a state -> Compare state)
     -> WithUninformed a state
     -> Maybe (Limit state)
-    -> List state
+    -> List ( state, Bool )
     -> SearchResult state
 orderedSearch comparison basicSearch maybeLimit =
     search (ordered <| comparison basicSearch) basicSearch maybeLimit 0
@@ -233,7 +235,7 @@ orderedSearch comparison basicSearch maybeLimit =
 unboundedOrderedSearch :
     (WithUninformed a state -> Compare state)
     -> WithUninformed a state
-    -> List state
+    -> List ( state, Bool )
     -> SearchResult state
 unboundedOrderedSearch comparison basicSearch =
     search (ordered <| comparison basicSearch) basicSearch Nothing 0
@@ -247,7 +249,7 @@ iterativeSearch :
     Buffer state buffer
     -> WithUninformed a state
     -> Limit state
-    -> List state
+    -> List ( state, Bool )
     -> SearchResult state
 iterativeSearch buffer basicSearch limit start =
     let
@@ -329,7 +331,7 @@ compareF informed =
 {-| Performs an unbounded depth first search. Depth first searches can easily
 fall into infinite loops.
 -}
-depthFirst : WithUninformed a state -> List state -> SearchResult state
+depthFirst : WithUninformed a state -> List ( state, Bool ) -> SearchResult state
 depthFirst =
     unboundedSearch fifo
 
@@ -337,7 +339,7 @@ depthFirst =
 {-| Performs an unbounded breadth first search. Breadth first searches store
 a lot of pending nodes in the buffer, so quickly run out of space.
 -}
-breadthFirst : WithUninformed a state -> List state -> SearchResult state
+breadthFirst : WithUninformed a state -> List ( state, Bool ) -> SearchResult state
 breadthFirst =
     unboundedSearch lifo
 
@@ -346,7 +348,7 @@ breadthFirst =
 has the highest f value (f = heuristic + cost).
 The seach will only be optimal if the heuristic function is monotonic.
 -}
-aStar : Informed state -> List state -> SearchResult state
+aStar : Informed state -> List ( state, Bool ) -> SearchResult state
 aStar =
     unboundedOrderedSearch compareF
 
@@ -354,7 +356,7 @@ aStar =
 {-| Performs a greedy heuristic search. This is one that always follows the
 search node that has the highest h value (h = heuristic).
 -}
-greedy : Informed state -> List state -> SearchResult state
+greedy : Informed state -> List ( state, Bool ) -> SearchResult state
 greedy =
     unboundedOrderedSearch compareH
 
@@ -364,7 +366,7 @@ has the lowest path cost. It is called a uniform cost search because the
 boundary of the search will have a roughly uniform cost as the search
 space is searched by increasing cost.
 -}
-uniformCost : WithUninformed a state -> List state -> SearchResult state
+uniformCost : WithUninformed a state -> List ( state, Bool ) -> SearchResult state
 uniformCost =
     unboundedOrderedSearch compareC
 
@@ -394,14 +396,14 @@ fLimit informed maxF _ ( state, _, _ ) =
 
 {-| Implements an uninformed search that is bounded to a specified maximum depth.
 -}
-depthBounded : WithUninformed a state -> Int -> List state -> SearchResult state
+depthBounded : WithUninformed a state -> Int -> List ( state, Bool ) -> SearchResult state
 depthBounded basicSearch maxDepth =
     search fifo basicSearch (Just <| depthLimit maxDepth) 0
 
 
 {-| Implements a cost bounded search. This search will proceed depth first.
 -}
-costBounded : WithUninformed a state -> Float -> List state -> SearchResult state
+costBounded : WithUninformed a state -> Float -> List ( state, Bool ) -> SearchResult state
 costBounded basicSearch maxCost =
     search fifo basicSearch (Just <| costLimit basicSearch maxCost) 0
 
@@ -409,7 +411,7 @@ costBounded basicSearch maxCost =
 {-| Implements an f value (f = heuristic + cost) bounded search. This search will
 proceed depth first.
 -}
-fBounded : Informed state -> Float -> List state -> SearchResult state
+fBounded : Informed state -> Float -> List ( state, Bool ) -> SearchResult state
 fBounded informed maxF =
     search fifo informed (Just <| fLimit informed maxF) 0
 
@@ -446,7 +448,7 @@ but repeats at progressively larger depth limits. The iteration number is
 multiplied by a specified multiple to calculate the maximum depth allowed
 at a given iteration.
 -}
-iterativeDeepening : Int -> WithUninformed a state -> List state -> SearchResult state
+iterativeDeepening : Int -> WithUninformed a state -> List ( state, Bool ) -> SearchResult state
 iterativeDeepening multiple basicSearch =
     iterativeSearch fifo basicSearch (iterativeDepthLimit multiple)
 
@@ -456,7 +458,7 @@ but repeats at progressively larger cost limits. The iteration number is
 multiplied by a specified multiple to calculate the maximum cost allowed
 at a given iteration.
 -}
-iterativeCostIncreasing : Float -> WithUninformed a state -> List state -> SearchResult state
+iterativeCostIncreasing : Float -> WithUninformed a state -> List ( state, Bool ) -> SearchResult state
 iterativeCostIncreasing multiple basicSearch =
     iterativeSearch fifo basicSearch (iterativeCostLimit basicSearch multiple)
 
@@ -476,7 +478,7 @@ solution may be found first within the current iteration. There is currently no 
 to signal the completion of an iteration.
 
 -}
-iterativeDeepeningAStar : Float -> Informed state -> List state -> SearchResult state
+iterativeDeepeningAStar : Float -> Informed state -> List ( state, Bool ) -> SearchResult state
 iterativeDeepeningAStar multiple informed =
     iterativeSearch fifo informed (iterativeFLimit informed multiple)
 

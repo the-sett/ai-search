@@ -3,7 +3,7 @@
     "name": "the-sett/ai-search",
     "summary": "AI Search for Elm",
     "license": "BSD-3-Clause",
-    "version": "4.1.1",
+    "version": "5.0.0",
     "exposed-modules": [
         "Search"
     ],
